@@ -1,0 +1,76 @@
+<file> ::= "netcdf" <ws> <group> <ws>
+<group> ::= <valid_name>
+			<ws>
+			"{"
+            <ws>
+			<types>?
+            <dimensions>?
+            <variables>?
+			<ws>
+            "}"
+            <ws>
+
+<types> ::= "types:" <rws>
+			<type>*
+
+<type> ::=    <enum_type>
+            | <vlen_type>
+            | <opaque_type> 
+            | <compound_type> 
+           
+<enum_type> ::= <data_type> <rws>
+				"enum" <rws> <valid_name> <ws>
+				"{"  (<assignment> ",")* <assignment> "}"
+                <ws> ";"? <ws>
+<vlen_type> ::= <data_type> <ws> "(*)" <rws> <valid_name> <ws> ";"? <ws>
+<opaque_type> ::= "opaque" <ws> "(" <number> ")" <rws> <valid_name> <ws> ";"? <ws>
+<compound_type> ::= "compound" <rws> <valid_name> <ws> "{" <compound_component>+ "}" <ws> ";"? <ws>
+
+<compound_component> ::= <ws> <valid_name> <rws> <valid_name> <ws> ";" <ws>
+
+<dimensions> ::= "dimensions:" <rws>
+				<dimension>*
+
+<dimension> ::= (<dim_assignment> ",")* <dim_assignment> ";" <ws>
+
+<variables> ::= "variables:" <rws>
+				<variable>*				
+                
+<variable> ::= <ws> <data_type> <rws> (<var_def> ",")* <var_def> ";" <ws>
+
+<var_def> ::= <ws> <valid_name> <var_dim> | <ws> <valid_name> <ws>
+<var_dim> ::= <ws> "(" <ws> (<ws> <valid_name> <ws> ",")* <ws> <valid_name> <ws> ")" <ws>
+
+<assignment> ::= <ws> <valid_name> <ws> "=" <ws> <number> <ws>
+<dim_assignment> ::= <ws> <valid_name> <ws> "=" <ws> <dim_size> <ws>
+<dim_size> ::= <number>
+			  | "unlimited"
+              | "UNLIMITED"
+
+<data_type> ::=   "char" 
+				| "byte"
+                | "short"
+                | "int"
+                | "long"
+                | "int64"
+                | "float"
+                | "real"
+                | "double"
+                | "ubyte"
+                | "ushort"
+                | "uint"
+                | "uint64"
+                | "string"
+
+<valid_name> ::= ([a-z] | [A-Z] | "_" | [0-9])+
+<sentence> ::= <ws> ([a-z] | [A-Z] | [0-9] | " " | "\t")* <ws>
+<number> ::= [0-9]+
+<ws> ::= (" " | "\t" | "\n")*
+<rws> ::= (" " | "\t" | "\n")+
+
+
+
+
+<comment> ::= (" " | "\t")* "//" <sentence> "\n"
+<wswc> ::= <ws> | <comment>
+
