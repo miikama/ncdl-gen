@@ -24,20 +24,21 @@ std::vector<Token> Parser::tokenize() {
         case '*':
         case ';':
         case ',':
+        case '"':
             stop_word_pick_char();
             continue;
 
         case '/':
-            stop_word();
-            // comment
-            if (peek() && *peek() == '/') {
+            // this is comment
+            if (double_peek() && *double_peek() == '/') {
+                stop_word();
                 pick_comment();
                 continue;
             }
+            // otherwise, this is part of group name and will be kept as single string
 
-        // should we separate this from the previous word?
+        // This is not separated this from the previous word
         // case ':':
-
 
         default:
             pop();
@@ -50,16 +51,13 @@ std::vector<Token> Parser::tokenize() {
 
 void Parser::discard_word() { m_word_start = m_cursor; }
 
-void Parser::pick_comment()
-{
+void Parser::pick_comment() {
     while (auto cur_char = pop()) {
-        switch (*cur_char)
-        {
+        switch (*cur_char) {
         case '\n':
             discard_word();
-            stop_word();
             return;
-        
+
         default:
             continue;
         }
@@ -83,6 +81,13 @@ void Parser::stop_word_pick_char() {
     m_tokens.push_back({m_input.substr(m_cursor, 1)});
     pop();
     m_word_start = m_cursor;
+}
+
+std::optional<char> Parser::double_peek() const {
+    if (m_cursor + 1 >= m_input.size()) {
+        return {};
+    }
+    return m_input[m_cursor + 1];
 }
 
 std::optional<char> Parser::peek() const {

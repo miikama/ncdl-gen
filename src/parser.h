@@ -17,6 +17,7 @@ class Parser {
 
     std::vector<Token> tokenize();
 
+    std::optional<char> double_peek() const;
     std::optional<char> peek() const;
     std::optional<char> pop();
 
