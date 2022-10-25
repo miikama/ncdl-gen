@@ -9,7 +9,8 @@
 namespace ncdlgen {
 
 struct Token {
-    std::string_view content;
+    const std::string_view& content() const { return m_content; } 
+    std::string_view m_content;
 };
 
 class Tokeniser {

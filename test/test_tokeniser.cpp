@@ -12,7 +12,7 @@ void print_tokens(const std::vector<std::string> &expected_tokens,
     std::cout << label << "\n";
     for (size_t i = 0; i < tokens.size() || i < expected_tokens.size(); i++)
     {
-        auto received = i < tokens.size() ? tokens[i] .content: "";
+        auto received = i < tokens.size() ? tokens[i] .content(): "";
         auto expected = i < expected_tokens.size() ? expected_tokens[i] : "";
         std::cout << "expected: " << std::setw(15) <<  expected << "          " << "received: " << std::setw(15) << received << "\n";
     }
@@ -31,8 +31,8 @@ void check_tokeniser(const std::string &input,
     ASSERT_EQ(tokens.size(), expected_tokens.size());
 
     for (size_t i = 0; i < tokens.size(); i++) {
-        EXPECT_EQ(tokens[i].content, expected_tokens[i])
-            << "Token " << i << ": " << tokens[i].content << " is not "
+        EXPECT_EQ(tokens[i].content(), expected_tokens[i])
+            << "Token " << i << ": " << tokens[i].content() << " is not "
             << expected_tokens[i] << ".";
     }
 }

@@ -14,14 +14,15 @@ int main() {
 
     std::cout << "tokens\n";
     for (auto &token : tokens) {
-        std::cout << token.content << "\n";
+        std::cout << token.content() << "\n";
     }
 
-    ncdlgen::Parser parser {};
-    auto ast = parser.parse(tokens);
+    ncdlgen::Parser parser {tokens};
+    auto ast = parser.parse();
+    std::cout << "Parsed tree:\n";
     if(ast.has_value())
     {
-        ast->print();
+        ast->print_tree();
     }
 
     return 0;

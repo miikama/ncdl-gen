@@ -7,31 +7,23 @@
 #include <vector>
 
 #include "tokeniser.h"
+#include "types.h"
 
 namespace ncdlgen {
-
-class Element {
-
-  public:
-    virtual void print() const = 0;
-    const std::string_view name() const { return m_name; };
-
-  protected:
-    std::string m_name{};
-};
-
-class RootGroup : public Element {
-  public:
-    void print() const override {}
-};
 
 class Parser {
 
   public:
-    std::optional<RootGroup> parse(const std::vector<Token> &tokens);
+    Parser(const std::vector<Token> &tokens) : m_tokens(tokens) {}
+    std::optional<RootGroup> parse();
+
+    std::optional<const Token> pop();
+    std::optional<const Token> peek();
 
   private:
     size_t m_cursor{};
+    const std::vector<Token> &m_tokens;
+
 };
 
 } // namespace ncdlgen
