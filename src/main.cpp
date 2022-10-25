@@ -1,6 +1,7 @@
 
 #include <iostream>
 
+#include "tokeniser.h"
 #include "parser.h"
 
 int main() {
@@ -8,12 +9,19 @@ int main() {
 
     std::string input{"netcdf foo {}"};
 
-    ncdlgen::Parser parser{input};
-    auto tokens = parser.tokenize();
+    ncdlgen::Tokeniser tokeniser{input};
+    auto tokens = tokeniser.tokenise();
 
     std::cout << "tokens\n";
     for (auto &token : tokens) {
         std::cout << token.content << "\n";
+    }
+
+    ncdlgen::Parser parser {};
+    auto ast = parser.parse(tokens);
+    if(ast.has_value())
+    {
+        ast->print();
     }
 
     return 0;

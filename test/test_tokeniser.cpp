@@ -4,7 +4,7 @@
 
 #include <gtest/gtest.h>
 
-#include "parser.h"
+#include "tokeniser.h"
 
 void print_tokens(const std::vector<std::string> &expected_tokens,
                   const std::vector<ncdlgen::Token> &tokens,
@@ -20,8 +20,8 @@ void print_tokens(const std::vector<std::string> &expected_tokens,
 
 void check_tokeniser(const std::string &input,
                      const std::vector<std::string> &expected_tokens) {
-    ncdlgen::Parser parser{input};
-    auto tokens = parser.tokenize();
+    ncdlgen::Tokeniser parser{input};
+    auto tokens = parser.tokenise();
 
     if (tokens.size() != expected_tokens.size()) {
         // print_tokens(expected_tokens,tokens, "expected");
