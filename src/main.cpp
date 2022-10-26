@@ -1,14 +1,49 @@
 
 #include <iostream>
+#include <fstream>
+#include <sstream>
 
 #include "tokeniser.h"
 #include "parser.h"
 
-int main() {
-    std::cout << "Hello world!\n";
+void parse_file(const std::string& filename)
+{
+    std::cout << "Reading input file " << filename << " \n";
+
+    std::ifstream istream { filename};
+
+    std::stringstream sstream {};
+    if(istream.is_open())
+    {
+        std::string line {};
+        while(getline(istream, line))
+        {
+            sstream << line << "\n";
+        }
+    }
+    auto input = sstream.str();
+
+    ncdlgen::Tokeniser tokeniser{input};
+    auto tokens = tokeniser.tokenise();
+
+    ncdlgen::Parser parser {tokens};
+    auto ast = parser.parse();
+    std::cout << "Parsed tree:\n";
+    if(ast.has_value())
+    {
+        ast->print_tree();
+    }
+}
+
+int main(int argc, char** argv) {
+
+    if (argc > 1)
+    {
+        parse_file(argv[1]);
+        return 0;
+    }
 
     std::string input{"netcdf foo {}"};
-
     ncdlgen::Tokeniser tokeniser{input};
     auto tokens = tokeniser.tokenise();
 
