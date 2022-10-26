@@ -27,17 +27,40 @@ class Types : public Element {
   public:
     std::string description() const override;
 
-    std::optional<Types> parse(Parser &);
+    static std::optional<Types> parse(Parser &);
+};
+
+using DimensionLength = size_t;
+
+class Dimension : public Element {
+  public:
+    std::string description() const override;
+
+    static std::optional<Dimension> parse(Parser &);
+
+  private:
+    DimensionLength m_length{};
+};
+
+class Dimensions : public Element {
+  public:
+    std::string description() const override;
+
+    static std::optional<Dimensions> parse(Parser &);
+
+  private:
+    std::vector<Dimension> m_dimensions{};
 };
 
 class Group : public Element {
   public:
     std::string description() const override;
 
-    std::optional<Group> parse(Parser &);
+    static std::optional<Group> parse(Parser &);
 
   private:
     std::optional<Types> m_types{};
+    std::optional<Dimensions> m_dimensions{};
 };
 
 class RootGroup : public Element {
@@ -46,7 +69,7 @@ class RootGroup : public Element {
 
     std::string description() const override;
 
-    std::optional<RootGroup> parse(Parser &);
+    static std::optional<RootGroup> parse(Parser &);
 
   private:
     std::optional<Group> m_group{};
