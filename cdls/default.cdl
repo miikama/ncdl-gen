@@ -1,12 +1,12 @@
 netcdf foo {  // an example netCDF specification in CDL
 
+              dimensions:
+                   lat = 10, lon = 5, time = unlimited ;
+
               types:
                   ubyte enum enum_t {Clear = 0, Cumulonimbus = 1, Stratus = 2};
                   opaque(11) opaque_t;
                   int(*) vlen_t;
-
-              dimensions:
-                   lat = 10, lon = 5, time = unlimited ;
 
               variables:
                    long    lat(lat), lon(lon), time(time);
@@ -40,7 +40,7 @@ netcdf foo {  // an example netCDF specification in CDL
               group: h {
               variables:
                    /g/cmpd_t  compoundvar;
-  //            data:
-//	      compoundvar = { {3,4,5}, enum_t.Stratus } ;
-              } // group h
-              }
+             data:
+	              compoundvar = { {3,4,5}, enum_t.Stratus } ;
+    } // group h
+}
