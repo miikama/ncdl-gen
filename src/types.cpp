@@ -7,6 +7,31 @@
 
 namespace ncdlgen {
 
+struct Description{
+
+    Description(const int indent, bool add_new_line = true) : indent(indent), new_line(add_new_line) {}
+
+    void operator<<(const std::string& input) { 
+        std::string line {};
+        for (size_t i = 0; i < indent * 2; i++)
+        {
+            line += " ";
+        }
+        line += input;
+        if ( new_line)
+        {
+            line += "\n";
+        } 
+        description += line;        
+    }
+
+    void push_indent() {  indent++; }
+
+    std::string description {};
+    size_t indent {};
+    bool new_line {};
+};
+
 bool is_keyword(const std::string_view word) {
     static std::unordered_set<std::string_view> keywords{};
     keywords.insert("variables:");
@@ -17,49 +42,51 @@ bool is_keyword(const std::string_view word) {
     return keywords.find(word) != keywords.end();
 }
 
-std::string Types::description() const { return "Types"; }
+std::string Types::description(int indent) const { return "Types"; }
 
-std::string Group::description() const {
-    std::string description = "  Group " + m_name;
+std::string Group::description(int indent) const {
+    Description description(indent);
+    description << "Group " + m_name;
     if (m_types) {
-        description.append("\n");
-        description.append(m_types->description());
+        description << m_types->description(indent + 1);
     }
     if (m_dimensions) {
-        description.append("\n");
-        description.append(m_dimensions->description());
+        description << m_dimensions->description(indent + 1);
     }
-    return description;
+    return description.description;
 }
 
-std::string Dimensions::description() const {
-    std::string description = "  Dimensions";
+std::string Dimensions::description(int indent) const {
+    Description description(indent);
+    description << "Dimensions";
     for (auto &dimension : m_dimensions) {
-        description.append("\n");
-        description.append(dimension.description());
+        description << dimension.description(indent + 1);
     }
-    description.append("\n");
-    return description;
+    return description.description;
 }
 
-std::string Dimension::description() const {
+std::string Dimension::description(int indent) const {
+    Description description(indent, false);
     if (m_length == 0) {
-        return "    " + m_name + " = unlimited";
+        description << m_name + " = unlimited";
     } else {
-        return "    " + m_name + " = " + std::to_string(m_length);
+        description << m_name + " = " + std::to_string(m_length);
     }
+    return description.description;
 }
 
-std::string RootGroup::description() const {
-    std::string description = "RootGroup " + m_name;
+std::string RootGroup::description(int indent) const {
+    Description description(indent);
+    description  << "RootGroup " + m_name;
     if (m_group) {
-        description.append("\n");
-        description.append(m_group->description());
+        Description group_description(indent, false);
+        group_description << m_group->description(indent + 1);
+        return description.description + group_description.description;
     }
-    return description;
+    return description.description;
 }
 
-void RootGroup::print_tree() { std::cout << description() << "\n"; }
+void RootGroup::print_tree() { std::cout << description(0); }
 
 std::optional<Dimension> Dimension::parse(Parser &parser) {
 

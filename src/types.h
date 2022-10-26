@@ -16,7 +16,7 @@ class Parser;
 class Element {
 
   public:
-    virtual std::string description() const = 0;
+    virtual std::string description(int indent) const = 0;
     const std::string_view name() const { return m_name; };
 
   protected:
@@ -25,7 +25,7 @@ class Element {
 
 class Types : public Element {
   public:
-    std::string description() const override;
+    std::string description(int indent) const override;
 
     static std::optional<Types> parse(Parser &);
 };
@@ -34,7 +34,7 @@ using DimensionLength = size_t;
 
 class Dimension : public Element {
   public:
-    std::string description() const override;
+    std::string description(int indent) const override;
 
     static std::optional<Dimension> parse(Parser &);
 
@@ -44,7 +44,7 @@ class Dimension : public Element {
 
 class Dimensions : public Element {
   public:
-    std::string description() const override;
+    std::string description(int indent) const override;
 
     static std::optional<Dimensions> parse(Parser &);
 
@@ -54,7 +54,7 @@ class Dimensions : public Element {
 
 class Group : public Element {
   public:
-    std::string description() const override;
+    std::string description(int indent) const override;
 
     static std::optional<Group> parse(Parser &);
 
@@ -67,7 +67,7 @@ class RootGroup : public Element {
   public:
     void print_tree();
 
-    std::string description() const override;
+    std::string description(int indent) const override;
 
     static std::optional<RootGroup> parse(Parser &);
 
