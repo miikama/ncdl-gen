@@ -31,4 +31,22 @@ std::optional<const Token> Parser::peek()
     return m_tokens[m_cursor];
 }
 
+std::optional<const Token>
+Parser::pop_specific(const std::vector<std::string> &possible_tokens)
+{
+    auto token = pop();
+    if (!token)
+    {
+        return {};
+    }
+    for(auto& possible : possible_tokens)
+    {
+        if(token->content() == possible)
+        {
+            return token;
+        }
+    }
+    return {};
+}
+
 } // namespace ncdlgen

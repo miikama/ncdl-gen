@@ -116,16 +116,10 @@ std::optional<Dimension> Dimension::parse(Parser &parser)
         return {};
     }
     auto name = parser.pop();
-    auto equals = parser.pop();
+    auto equals = parser.pop_specific({"="});
     auto value = parser.pop();
-    auto line_end_or_comma = parser.pop();
+    auto line_end_or_comma = parser.pop_specific({",", ";"});
     if (!name || !equals || !value || !line_end_or_comma)
-    {
-        return {};
-    }
-    bool is_line_or_comma = line_end_or_comma->content() == "," ||
-                            line_end_or_comma->content() == ";";
-    if (equals->content() != "=" || !is_line_or_comma)
     {
         return {};
     }
@@ -163,7 +157,6 @@ std::optional<Dimensions> Dimensions::parse(Parser &parser)
 
 std::optional<EnumValue> EnumValue::parse(Parser &parser)
 {
-    // TODO: almost Dimension::parse
     auto next_token = parser.peek();
     if (!next_token || is_keyword(next_token->content()))
     {
@@ -176,16 +169,10 @@ std::optional<EnumValue> EnumValue::parse(Parser &parser)
     }
 
     auto name = parser.pop();
-    auto equals = parser.pop();
+    auto equals = parser.pop_specific({"="});
     auto value = parser.pop();
-    auto bracket_or_comma = parser.pop();
+    auto bracket_or_comma = parser.pop_specific({",", "}"});
     if (!name || !equals || !value || !bracket_or_comma)
-    {
-        return {};
-    }
-    bool is_bracket_or_comma = bracket_or_comma->content() == "," ||
-                               bracket_or_comma->content() == "}";
-    if (equals->content() != "=" || !is_bracket_or_comma)
     {
         return {};
     }

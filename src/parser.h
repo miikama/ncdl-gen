@@ -22,6 +22,9 @@ class Parser
     std::optional<const Token> pop();
     std::optional<const Token> peek();
 
+    std::optional<const Token>
+    pop_specific(const std::vector<std::string> &possible_tokens);
+
   private:
     size_t m_cursor{};
     const std::vector<Token> &m_tokens;
