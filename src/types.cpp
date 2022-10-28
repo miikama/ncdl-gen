@@ -1,42 +1,13 @@
 
 #include <iostream>
+#include <unordered_set>
 
 #include "parser.h"
 #include "types.h"
-#include "unordered_set"
+#include "logging.h"
 
 namespace ncdlgen
 {
-
-struct Description
-{
-
-    Description(const int indent, bool add_new_line = true)
-        : indent(indent), new_line(add_new_line)
-    {
-    }
-
-    void operator<<(const std::string &input)
-    {
-        std::string line{};
-        for (size_t i = 0; i < indent * 2; i++)
-        {
-            line += " ";
-        }
-        line += input;
-        if (new_line)
-        {
-            line += "\n";
-        }
-        description += line;
-    }
-
-    void push_indent() { indent++; }
-
-    std::string description{};
-    size_t indent{};
-    bool new_line{};
-};
 
 bool is_keyword(const std::string_view word)
 {
