@@ -48,25 +48,6 @@ std::string Types::description(int indent) const
     return description.description;
 }
 
-std::string Group::description(int indent) const
-{
-    Description description(indent, false);
-    description << "Group " + m_name + "\n";
-    if (m_types)
-    {
-        description << m_types->description(indent + 1);
-    }
-    if (m_dimensions)
-    {
-        description << m_dimensions->description(indent + 1);
-    }
-    for (auto &group : m_groups)
-    {
-        description << group.description(indent + 1);
-    }
-    return description.description;
-}
-
 std::string Dimensions::description(int indent) const
 {
     Description description(indent);
@@ -153,6 +134,71 @@ std::optional<Dimensions> Dimensions::parse(Parser &parser)
         return {};
     }
     return dimensions;
+}
+
+std::string Variable::description(int indent) const
+{
+    Description description(indent, false);
+    description << fmt::format("{} {}", name_for_type(m_type), m_name);
+    return description.description;
+}
+
+std::optional<Variable> Variable::parse(Parser &parser)
+{
+    auto next_token = parser.peek();
+    if (!next_token || is_keyword(next_token->content()))
+    {
+        return {};
+    }
+
+    //variables:
+    //    ubyte   tag;
+    //    double  p(time,lat,lon);
+    //    long    rh(time,lat,lon);
+    //    string  country(time,lat,lon);
+    //    long    lat(lat), lon(lon), time(time);
+    //    float   Z(time,lat,lon), t(time,lat,lon);
+    auto type = parser.pop_type();
+    auto name = parser.pop();
+    auto line_end_or_open_bracket = parser.pop_specific({"(", ";"});
+    if ( !type || !name || !line_end_or_open_bracket)
+    {
+        return {};
+    }
+
+    if( line_end_or_open_bracket->content() == ";")
+    {
+        Variable var{};
+        var.m_name = name->content();
+        auto surely_this_is_type_already = type_for_token(*type);
+        var.m_type = *surely_this_is_type_already;
+        return var;
+    }
+
+    return {};
+}
+
+std::string Variables::description(int indent) const
+{
+    Description description(indent);
+    description << "Variables";
+    for (auto &variable : m_variables)
+    {
+        description << variable.description(indent + 1);
+    }
+    return description.description;
+}
+
+std::optional<Variables> Variables::parse(Parser & parser)
+{
+    Variables variables{};
+    variables.m_name = "variables:";
+    while(auto variable = Variable::parse(parser))
+    {
+        std::cout << "actually parsin var going at "  << parser.peek()->content() << "\n";
+        variables.m_variables.push_back(*variable);
+    }
+    return variables;
 }
 
 std::optional<EnumValue> EnumValue::parse(Parser &parser)
@@ -274,6 +320,30 @@ std::optional<Types> Types::parse(Parser &parser)
     return types;
 }
 
+
+std::string Group::description(int indent) const
+{
+    Description description(indent, false);
+    description << "Group " + m_name + "\n";
+    if (m_types)
+    {
+        description << m_types->description(indent + 1);
+    }
+    if (m_dimensions)
+    {
+        description << m_dimensions->description(indent + 1);
+    }
+    if (m_variables)
+    {
+        description << m_variables->description(indent + 1);
+    }
+    for (auto &group : m_groups)
+    {
+        description << group.description(indent + 1);
+    }
+    return description.description;
+}
+
 std::optional<Group> Group::parse(Parser &parser)
 {
 
@@ -300,12 +370,12 @@ std::optional<Group> Group::parse(Parser &parser)
         }
         else if (content->content() == "data:")
         {
-            group.m_types = Types::parse(parser);
             std::cout << "parsing data\n";
         }
         else if (content->content() == "variables:")
         {
             std::cout << "parsing variables\n";
+            group.m_variables = Variables::parse(parser);
         }
         else if (content->content() == "group:")
         {

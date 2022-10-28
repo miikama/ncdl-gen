@@ -157,6 +157,29 @@ class Dimensions : public Element
     std::vector<Dimension> m_dimensions{};
 };
 
+class Variable : public Element
+{
+  public:
+    std::string description(int indent) const override;
+
+    static std::optional<Variable> parse(Parser &);
+
+  private:
+    double m_value{};
+    NetCDFType m_type { NetCDFType::Default };
+};
+
+class Variables : public Element
+{
+  public:
+    std::string description(int indent) const override;
+
+    static std::optional<Variables> parse(Parser &);
+
+  private:
+    std::vector<Variable> m_variables{};
+};
+
 class Group : public Element
 {
   public:
@@ -174,12 +197,14 @@ class Group : public Element
         m_types = std::move(group.m_types);
         m_dimensions = std::move(group.m_dimensions);
         m_groups = std::move(group.m_groups);
+        m_variables = std::move(group.m_variables);
     }
     Group& operator= (Group&& group) noexcept {
         m_name = std::move(group.m_name);
         m_types = std::move(group.m_types);
         m_dimensions = std::move(group.m_dimensions);
         m_groups = std::move(group.m_groups);
+        m_variables = std::move(group.m_variables);
         return *this;
     }
 
@@ -190,6 +215,7 @@ class Group : public Element
   private:
     std::optional<Types> m_types{};
     std::optional<Dimensions> m_dimensions{};
+    std::optional<Variables> m_variables{};
     std::vector<Group> m_groups{};
 };
 
