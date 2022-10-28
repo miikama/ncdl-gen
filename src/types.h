@@ -50,7 +50,6 @@ class Type : public Element {
   public:
     Type(const std::string_view &name) : Element(name) {}
 
-
     virtual std::string description(int indent) const = 0;
 
     static std::unique_ptr<Type> parse(Parser &);
