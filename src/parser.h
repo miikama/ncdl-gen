@@ -24,6 +24,7 @@ class Parser
 
     std::optional<const Token>
     pop_specific(const std::vector<std::string> &possible_tokens);
+    std::optional<const Token> pop_type();
 
   private:
     size_t m_cursor{};
