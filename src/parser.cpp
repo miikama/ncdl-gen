@@ -2,19 +2,20 @@
 
 #include "parser.h"
 
-namespace ncdlgen {
+namespace ncdlgen
+{
 
+std::optional<RootGroup> Parser::parse()
+{
 
-std::optional<RootGroup> Parser::parse() {
-
-    RootGroup root {};
+    RootGroup root{};
 
     return root.parse(*this);
 }
 
 std::optional<const Token> Parser::pop()
 {
-    if(m_cursor >= m_tokens.size())
+    if (m_cursor >= m_tokens.size())
     {
         return {};
     }
@@ -23,7 +24,7 @@ std::optional<const Token> Parser::pop()
 
 std::optional<const Token> Parser::peek()
 {
-    if(m_cursor >= m_tokens.size())
+    if (m_cursor >= m_tokens.size())
     {
         return {};
     }

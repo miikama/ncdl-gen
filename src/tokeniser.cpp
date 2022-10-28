@@ -3,14 +3,18 @@
 
 #include "tokeniser.h"
 
-namespace ncdlgen {
+namespace ncdlgen
+{
 
-std::vector<Token> Tokeniser::tokenise() {
+std::vector<Token> Tokeniser::tokenise()
+{
 
-    while (auto character = peek()) {
+    while (auto character = peek())
+    {
         // std::cout << "Got characeter: " << *character << "\n";
 
-        switch (*character) {
+        switch (*character)
+        {
         case ' ':
         case '\t':
         case '\n':
@@ -30,15 +34,17 @@ std::vector<Token> Tokeniser::tokenise() {
 
         case '/':
             // this is comment
-            if (double_peek() && *double_peek() == '/') {
+            if (double_peek() && *double_peek() == '/')
+            {
                 stop_word();
                 pick_comment();
                 continue;
             }
-            // otherwise, this is part of group name and will be kept as single string
+            // otherwise, this is part of group name and will be kept as single
+            // string
 
-        // This is not separated this from the previous word
-        // case ':':
+            // This is not separated this from the previous word
+            // case ':':
 
         default:
             pop();
@@ -51,9 +57,12 @@ std::vector<Token> Tokeniser::tokenise() {
 
 void Tokeniser::discard_word() { m_word_start = m_cursor; }
 
-void Tokeniser::pick_comment() {
-    while (auto cur_char = pop()) {
-        switch (*cur_char) {
+void Tokeniser::pick_comment()
+{
+    while (auto cur_char = pop())
+    {
+        switch (*cur_char)
+        {
         case '\n':
             discard_word();
             return;
@@ -64,8 +73,10 @@ void Tokeniser::pick_comment() {
     }
 }
 
-void Tokeniser::stop_word() {
-    if (m_cursor > m_word_start) {
+void Tokeniser::stop_word()
+{
+    if (m_cursor > m_word_start)
+    {
         m_tokens.push_back(
             {m_input.substr(m_word_start, m_cursor - m_word_start)});
     }
@@ -73,8 +84,10 @@ void Tokeniser::stop_word() {
     m_word_start = m_cursor;
 }
 
-void Tokeniser::stop_word_pick_char() {
-    if (m_cursor > m_word_start) {
+void Tokeniser::stop_word_pick_char()
+{
+    if (m_cursor > m_word_start)
+    {
         m_tokens.push_back(
             {m_input.substr(m_word_start, m_cursor - m_word_start)});
     }
@@ -83,22 +96,28 @@ void Tokeniser::stop_word_pick_char() {
     m_word_start = m_cursor;
 }
 
-std::optional<char> Tokeniser::double_peek() const {
-    if (m_cursor + 1 >= m_input.size()) {
+std::optional<char> Tokeniser::double_peek() const
+{
+    if (m_cursor + 1 >= m_input.size())
+    {
         return {};
     }
     return m_input[m_cursor + 1];
 }
 
-std::optional<char> Tokeniser::peek() const {
-    if (m_cursor >= m_input.size()) {
+std::optional<char> Tokeniser::peek() const
+{
+    if (m_cursor >= m_input.size())
+    {
         return {};
     }
     return m_input[m_cursor];
 }
 
-std::optional<char> Tokeniser::pop() {
-    if (m_cursor >= m_input.size()) {
+std::optional<char> Tokeniser::pop()
+{
+    if (m_cursor >= m_input.size())
+    {
         return {};
     }
     return m_input[m_cursor++];

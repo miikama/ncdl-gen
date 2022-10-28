@@ -9,9 +9,11 @@
 #include "tokeniser.h"
 #include "types.h"
 
-namespace ncdlgen {
+namespace ncdlgen
+{
 
-class Parser {
+class Parser
+{
 
   public:
     Parser(const std::vector<Token> &tokens) : m_tokens(tokens) {}
@@ -23,7 +25,6 @@ class Parser {
   private:
     size_t m_cursor{};
     const std::vector<Token> &m_tokens;
-
 };
 
 } // namespace ncdlgen

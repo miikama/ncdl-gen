@@ -6,14 +6,17 @@
 #include <string_view>
 #include <vector>
 
-namespace ncdlgen {
+namespace ncdlgen
+{
 
-struct Token {
-    const std::string_view& content() const { return m_content; } 
+struct Token
+{
+    const std::string_view &content() const { return m_content; }
     std::string_view m_content;
 };
 
-class Tokeniser {
+class Tokeniser
+{
 
   public:
     Tokeniser(const std::string &input) : m_input(input) {}

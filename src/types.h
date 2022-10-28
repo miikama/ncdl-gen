@@ -2,19 +2,21 @@
 
 #pragma once
 
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
-#include <memory>
 
 #include "tokeniser.h"
 
-namespace ncdlgen {
+namespace ncdlgen
+{
 
 class Parser;
 
-class Element {
+class Element
+{
 
   public:
     Element() = default;
@@ -28,7 +30,8 @@ class Element {
     std::string m_name{};
 };
 
-enum class NetCDFType {
+enum class NetCDFType
+{
     Char,
     Byte,
     Ubyte,
@@ -46,7 +49,8 @@ enum class NetCDFType {
     Default,
 };
 
-class Type : public Element {
+class Type : public Element
+{
   public:
     Type(const std::string_view &name) : Element(name) {}
 
@@ -61,10 +65,13 @@ class Type : public Element {
 
 using DimensionLength = size_t;
 
-class OpaqueType : public Type {
+class OpaqueType : public Type
+{
   public:
     OpaqueType(const std::string_view &name, const size_t &length)
-        : m_length(length), Type(name) {}
+        : m_length(length), Type(name)
+    {
+    }
 
     std::string description(int indent) const override;
 
@@ -74,19 +81,23 @@ class OpaqueType : public Type {
     DimensionLength m_length{};
 };
 
-struct EnumValue {
+struct EnumValue
+{
     std::string name{};
     int value{};
 
     static std::optional<EnumValue> parse(Parser &);
 };
 
-class EnumType : public Type {
+class EnumType : public Type
+{
     friend class Type;
 
   public:
     EnumType(const std::string_view &name, const NetCDFType type)
-        : m_type(type), Type(name) {}
+        : m_type(type), Type(name)
+    {
+    }
 
     std::string description(int indent) const override;
 
@@ -97,10 +108,13 @@ class EnumType : public Type {
     std::vector<EnumValue> m_values{};
 };
 
-class VLenType : public Type {
+class VLenType : public Type
+{
   public:
     VLenType(const std::string_view &name, const NetCDFType type)
-        : m_type(type), Type(name) {}
+        : m_type(type), Type(name)
+    {
+    }
 
     std::string description(int indent) const override;
 
@@ -110,7 +124,8 @@ class VLenType : public Type {
     NetCDFType m_type{NetCDFType::Default};
 };
 
-class Types : public Element {
+class Types : public Element
+{
   public:
     std::string description(int indent) const override;
 
@@ -120,7 +135,8 @@ class Types : public Element {
     std::vector<std::unique_ptr<Type>> m_types{};
 };
 
-class Dimension : public Element {
+class Dimension : public Element
+{
   public:
     std::string description(int indent) const override;
 
@@ -130,7 +146,8 @@ class Dimension : public Element {
     DimensionLength m_length{};
 };
 
-class Dimensions : public Element {
+class Dimensions : public Element
+{
   public:
     std::string description(int indent) const override;
 
@@ -140,7 +157,8 @@ class Dimensions : public Element {
     std::vector<Dimension> m_dimensions{};
 };
 
-class Group : public Element {
+class Group : public Element
+{
   public:
     std::string description(int indent) const override;
 
@@ -151,7 +169,8 @@ class Group : public Element {
     std::optional<Dimensions> m_dimensions{};
 };
 
-class RootGroup : public Element {
+class RootGroup : public Element
+{
   public:
     void print_tree();
 
