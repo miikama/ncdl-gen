@@ -190,8 +190,8 @@ std::string Types::description(int indent) const
 
 std::string Group::description(int indent) const
 {
-    Description description(indent);
-    description << "Group " + m_name;
+    Description description(indent, false);
+    description << "Group " + m_name + "\n";
     if (m_types)
     {
         description << m_types->description(indent + 1);
@@ -199,6 +199,10 @@ std::string Group::description(int indent) const
     if (m_dimensions)
     {
         description << m_dimensions->description(indent + 1);
+    }
+    for (auto &group : m_groups)
+    {
+        description << group.description(indent + 1);
     }
     return description.description;
 }
@@ -346,7 +350,6 @@ std::unique_ptr<Type> Type::parse(Parser &parser)
 
     if (type_name->content() == "opaque")
     {
-        std::cout << "parsing opaque type " << type_name->content() << "\n";
         //     opaque(11) opaque_t;
         auto left_brace = parser.pop();
         auto opaque_size = parser.pop();
@@ -369,8 +372,6 @@ std::unique_ptr<Type> Type::parse(Parser &parser)
 
     if (parser.peek() && parser.peek()->content() == "enum")
     {
-        std::cout << "parsing enum type " << name_for_type(*actual_type)
-                  << "\n";
         //     ubyte enum enum_t {Clear = 0, Cumulonimbus = 1, Stratus = 2};
         parser.pop();
         auto enum_name = parser.pop();
@@ -389,17 +390,20 @@ std::unique_ptr<Type> Type::parse(Parser &parser)
     }
 
     //     int(*) vlen_t;
-    std::cout << "parsing vlen type " << name_for_type(*actual_type) << "\n";
     auto left_bracket = parser.pop();
     auto star = parser.pop();
     auto right_bracket = parser.pop();
     auto vlen_name = parser.pop();
     auto line_end = parser.pop();
     if (!left_bracket || !star || !right_bracket || !vlen_name || !line_end)
+    {
         return {};
+    }
     if (left_bracket->content() != "(" || star->content() != "*" ||
         right_bracket->content() != ")")
+    {
         return {};
+    }
 
     return std::make_unique<VLenType>(vlen_name->content(), *actual_type);
 }
@@ -439,11 +443,30 @@ std::optional<Group> Group::parse(Parser &parser)
     {
         if (content->content() == "dimensions:")
         {
+            std::cout << "parsing dimensions\n";
             group.m_dimensions = Dimensions::parse(parser);
         }
         else if (content->content() == "types:")
         {
+            std::cout << "parsing types\n";
             group.m_types = Types::parse(parser);
+        }
+        else if (content->content() == "data:")
+        {
+            group.m_types = Types::parse(parser);
+            std::cout << "parsing data\n";
+        }
+        else if (content->content() == "variables:")
+        {
+            std::cout << "parsing variables\n";
+        }
+        else if (content->content() == "group:")
+        {
+            std::cout << "parsing group\n";
+            if (auto child_group = Group::parse(parser))
+            {
+                group.m_groups.push_back(std::move(*child_group));
+            }
         }
         else if (content->content() == "}")
         {
