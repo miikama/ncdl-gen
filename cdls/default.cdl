@@ -9,13 +9,13 @@ netcdf foo {  // an example netCDF specification in CDL
                   int(*) vlen_t;
 
               variables:
-                   long    lat(lat), lon(lon), time(time);
-                   float   Z(time,lat,lon), t(time,lat,lon);
+                   ubyte   tag;
                    double  p(time,lat,lon);
                    long    rh(time,lat,lon);
-
                    string  country(time,lat,lon);
-                   ubyte   tag;
+                   long    lat(lat), lon(lon), time(time);
+                   float   Z(time,lat,lon), t(time,lat,lon);
+
 
                    // variable attributes
                    lat:long_name = "latitude";
