@@ -1,6 +1,8 @@
 
 #include <iostream>
 
+#include <fmt/core.h>
+
 #include "logging.h"
 #include "parser.h"
 #include "syntax.h"
@@ -12,27 +14,26 @@ namespace ncdlgen
 std::string OpaqueType::description(int indent) const
 {
     Description description(indent);
-    description << std::string("OpaqueType ") + "opaque(" +
-                       std::to_string(m_length) + ") " + Element::m_name;
+    description << fmt::format("OpaqueType opaque({}) {}", m_length, m_name);
     return description.description;
 }
 std::string EnumType::description(int indent) const
 {
     Description description(indent);
-    description << "EnumType " + m_name + " " + name_for_type(m_type);
+    description << fmt::format("EnumType {} {}", m_name, name_for_type(m_type));
     description.push_indent();
     description.push_indent();
     description.push_indent();
     for (auto &value : m_values)
     {
-        description << value.name + "=" + std::to_string(value.value);
+        description << fmt::format("{} = {}", value.name, value.value);
     }
     return description.description;
 }
 std::string VLenType::description(int indent) const
 {
     Description description(indent);
-    description << "VLenType " + name_for_type(m_type) + "(*)";
+    description << fmt::format("VLenType {} (*)", name_for_type(m_type));
     return description.description;
 }
 
@@ -82,11 +83,11 @@ std::string Dimension::description(int indent) const
     Description description(indent, false);
     if (m_length == 0)
     {
-        description << m_name + " = unlimited";
+        description << fmt::format("{} = unlimited", m_name);
     }
     else
     {
-        description << m_name + " = " + std::to_string(m_length);
+        description << fmt::format("{} = {}", m_name, m_length);
     }
     return description.description;
 }

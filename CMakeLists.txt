@@ -4,8 +4,10 @@ project("ncdl-gen")
 
 enable_language(CXX)
 
-add_subdirectory(src)
+# include fmt
+find_package(fmt REQUIRED)
 
+add_subdirectory(src)
 
 if (BUILD_TESTING)
 

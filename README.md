@@ -10,6 +10,14 @@ The CDL grammar is also available [here](https://manpages.ubuntu.com/manpages/fo
 
 ## Build
 
+Dependencies
+
+```
+fmt
+```
+
+`fmt` installation instructions https://fmt.dev/latest/usage.html#installing-the-library
+
 Basic build
 
 ```sh

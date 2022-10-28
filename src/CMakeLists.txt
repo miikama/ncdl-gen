@@ -11,5 +11,5 @@ target_compile_features(ncdlgen PUBLIC cxx_std_17)
 
 add_executable(parser main.cpp)
 
-target_link_libraries(parser ncdlgen)
+target_link_libraries(parser ncdlgen fmt::fmt)
 
