@@ -136,10 +136,39 @@ std::optional<Dimensions> Dimensions::parse(Parser &parser)
     return dimensions;
 }
 
+std::string VariableDimension::description(int indent) const { return m_name; }
+
+std::optional<VariableDimension> VariableDimension::parse(Parser &parser)
+{
+    auto dim_name = parser.pop();
+    auto comma_or_close_brace = parser.pop_specific({")", ","});
+    if (!dim_name || !comma_or_close_brace)
+    {
+        return {};
+    }
+    VariableDimension dim{dim_name->content()};
+    return dim;
+}
+
 std::string Variable::description(int indent) const
 {
     Description description(indent, false);
     description << fmt::format("{} {}", name_for_type(m_type), m_name);
+
+    if (m_dimensions.empty())
+    {
+        return description.description;
+    }
+
+    std::string dim_description = "";
+    dim_description += fmt::format(" ({}", m_dimensions.front().description(0));
+    for (size_t i = 1; i < m_dimensions.size(); i++)
+    {
+        dim_description += fmt::format(", {}", m_dimensions[i].description(0));
+    }
+    dim_description += ")";
+    description.indent = 0;
+    description << dim_description;
     return description.description;
 }
 
@@ -151,7 +180,7 @@ std::optional<Variable> Variable::parse(Parser &parser)
         return {};
     }
 
-    //variables:
+    // variables:
     //    ubyte   tag;
     //    double  p(time,lat,lon);
     //    long    rh(time,lat,lon);
@@ -161,21 +190,41 @@ std::optional<Variable> Variable::parse(Parser &parser)
     auto type = parser.pop_type();
     auto name = parser.pop();
     auto line_end_or_open_bracket = parser.pop_specific({"(", ";"});
-    if ( !type || !name || !line_end_or_open_bracket)
+    if (!type || !name || !line_end_or_open_bracket)
     {
         return {};
     }
 
-    if( line_end_or_open_bracket->content() == ";")
+    Variable var{};
+    var.m_name = name->content();
+    auto surely_this_is_type_already = type_for_token(*type);
+    if (!surely_this_is_type_already)
     {
-        Variable var{};
-        var.m_name = name->content();
-        auto surely_this_is_type_already = type_for_token(*type);
-        var.m_type = *surely_this_is_type_already;
+        return {};
+    }
+    var.m_type = *surely_this_is_type_already;
+
+    if (line_end_or_open_bracket->content() == ";")
+    {
         return var;
     }
 
-    return {};
+    while (auto dimension = VariableDimension::parse(parser))
+    {
+        var.m_dimensions.push_back(*dimension);
+        if (parser.peek() && parser.peek()->content() == ";") {
+            break;
+        }
+    }
+    auto line_end = parser.pop_specific({";"});
+
+    if (!line_end)
+    {
+        std::cout << "Could not find line end for variable definition\n";
+        return {};
+    }
+
+    return var;
 }
 
 std::string Variables::description(int indent) const
@@ -189,13 +238,14 @@ std::string Variables::description(int indent) const
     return description.description;
 }
 
-std::optional<Variables> Variables::parse(Parser & parser)
+std::optional<Variables> Variables::parse(Parser &parser)
 {
     Variables variables{};
     variables.m_name = "variables:";
-    while(auto variable = Variable::parse(parser))
+    while (auto variable = Variable::parse(parser))
     {
-        std::cout << "actually parsin var going at "  << parser.peek()->content() << "\n";
+        std::cout << "actually parsin var going at " << parser.peek()->content()
+                  << "\n";
         variables.m_variables.push_back(*variable);
     }
     return variables;
@@ -319,7 +369,6 @@ std::optional<Types> Types::parse(Parser &parser)
     }
     return types;
 }
-
 
 std::string Group::description(int indent) const
 {
