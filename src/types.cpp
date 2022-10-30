@@ -172,7 +172,8 @@ std::string Variable::description(int indent) const
     return description.description;
 }
 
-std::optional<Variable> Variable::parse(Parser &parser)
+std::optional<Variable> Variable::parse(Parser &parser,
+                                        std::optional<NetCDFType> existing_type)
 {
     auto next_token = parser.peek();
     if (!next_token || is_keyword(next_token->content()))
@@ -187,22 +188,35 @@ std::optional<Variable> Variable::parse(Parser &parser)
     //    string  country(time,lat,lon);
     //    long    lat(lat), lon(lon), time(time);
     //    float   Z(time,lat,lon), t(time,lat,lon);
-    auto type = parser.pop_type();
+    NetCDFType var_type{NetCDFType::Default};
+    if (existing_type)
+    {
+        var_type = *existing_type;
+    }
+    else
+    {
+        auto type = parser.pop_type();
+        if (!type)
+        {
+            return {};
+        }
+        auto surely_this_is_type_already = type_for_token(*type);
+        if (!surely_this_is_type_already)
+        {
+            return {};
+        }
+        var_type = *surely_this_is_type_already;
+    }
     auto name = parser.pop();
     auto line_end_or_open_bracket = parser.pop_specific({"(", ";"});
-    if (!type || !name || !line_end_or_open_bracket)
+    if (!name || !line_end_or_open_bracket)
     {
         return {};
     }
 
     Variable var{};
     var.m_name = name->content();
-    auto surely_this_is_type_already = type_for_token(*type);
-    if (!surely_this_is_type_already)
-    {
-        return {};
-    }
-    var.m_type = *surely_this_is_type_already;
+    var.m_type = var_type;
 
     if (line_end_or_open_bracket->content() == ";")
     {
@@ -212,8 +226,14 @@ std::optional<Variable> Variable::parse(Parser &parser)
     while (auto dimension = VariableDimension::parse(parser))
     {
         var.m_dimensions.push_back(*dimension);
-        if (parser.peek() && parser.peek()->content() == ";") {
+        if (parser.peek_specific({";"}))
+        {
             break;
+        }
+        // new definiton on same line with same type
+        if (parser.peek_specific({","}))
+        {
+            return var;
         }
     }
     auto line_end = parser.pop_specific({";"});
@@ -242,11 +262,21 @@ std::optional<Variables> Variables::parse(Parser &parser)
 {
     Variables variables{};
     variables.m_name = "variables:";
-    while (auto variable = Variable::parse(parser))
+
+    std::optional<NetCDFType> previous_type = {};
+    while (auto variable = Variable::parse(parser, previous_type))
     {
-        std::cout << "actually parsin var going at " << parser.peek()->content()
-                  << "\n";
         variables.m_variables.push_back(*variable);
+
+        if (parser.peek_specific({","}))
+        {
+            previous_type = variables.m_variables.back().type();
+            parser.pop();
+        }
+        else
+        {
+            previous_type = {};
+        }
     }
     return variables;
 }

@@ -170,8 +170,9 @@ class Variable : public Element
   public:
     std::string description(int indent) const override;
 
-    static std::optional<Variable> parse(Parser &);
+    static std::optional<Variable> parse(Parser &, std::optional<NetCDFType> existing_type);
 
+    const NetCDFType type() const { return m_type; }
   private:
     double m_value{};
     NetCDFType m_type{NetCDFType::Default};
