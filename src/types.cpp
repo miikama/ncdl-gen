@@ -223,6 +223,15 @@ std::string Variables::description(int indent) const
     {
         description << variable.description(indent + 1);
     }
+    if (m_attributes.empty()) {
+        return description.description;
+    }
+
+    description << "Attributes";
+    for (auto &attribute : m_attributes)
+    {
+        description << attribute.description(indent);
+    }
     return description.description;
 }
 
@@ -277,18 +286,6 @@ std::string Attribute::description(int indent) const
 }
 
 std::optional<Attribute> Attribute::parse(Parser &parser) { return {}; }
-
-std::string Attributes::description(int indent) const
-{
-    Description description(indent);
-    for (auto &attribute : m_attributes)
-    {
-        description << attribute.description(indent);
-    }
-    return description.description;
-}
-
-std::optional<Attributes> Attributes::parse(Parser &parser) { return {}; }
 
 std::optional<VariableDeclaration::VariableDeclarationType>
 VariableDeclaration::parse(Parser &parser,

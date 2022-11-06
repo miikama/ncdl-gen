@@ -171,16 +171,6 @@ class Attribute : public Element
     std::string m_attribute_name{};
 };
 
-class Attributes : public Element
-{
-  public:
-    std::string description(int indent) const override;
-
-    static std::optional<Attributes> parse(Parser &);
-private:
-    std::vector<Attribute> m_attributes {};
-};
-
 class VariableDimension : public Element
 {
   public:
@@ -264,7 +254,6 @@ class Group : public Element
     std::optional<Types> m_types{};
     std::optional<Dimensions> m_dimensions{};
     std::optional<Variables> m_variables{};
-    std::vector<Attributes> m_attributes{};
     std::vector<Group> m_groups{};
 };
 
