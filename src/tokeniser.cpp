@@ -28,8 +28,16 @@ std::vector<Token> Tokeniser::tokenise()
         case '*':
         case ';':
         case ',':
+            stop_word_leave_char();
+            m_tokens.push_back({m_input.substr(m_cursor, 1)});
+            pop();
+            m_word_start = m_cursor;
+            continue;
+
         case '"':
-            stop_word_pick_char();
+            stop_word_leave_char();
+            pop();
+            pick_string();
             continue;
 
         case '/':
@@ -73,6 +81,22 @@ void Tokeniser::pick_comment()
     }
 }
 
+void Tokeniser::pick_string()
+{
+    while (auto cur_char = pop())
+    {
+        switch (*cur_char)
+        {
+        case '"':
+            stop_word_leave_char();
+            return;
+
+        default:
+            continue;
+        }
+    }
+}
+
 void Tokeniser::stop_word()
 {
     if (m_cursor > m_word_start)
@@ -84,15 +108,13 @@ void Tokeniser::stop_word()
     m_word_start = m_cursor;
 }
 
-void Tokeniser::stop_word_pick_char()
+void Tokeniser::stop_word_leave_char()
 {
     if (m_cursor > m_word_start)
     {
         m_tokens.push_back(
             {m_input.substr(m_word_start, m_cursor - m_word_start)});
     }
-    m_tokens.push_back({m_input.substr(m_cursor, 1)});
-    pop();
     m_word_start = m_cursor;
 }
 

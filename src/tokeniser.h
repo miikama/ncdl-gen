@@ -29,9 +29,10 @@ class Tokeniser
 
   private:
     void pick_comment();
+    void pick_string();
     void discard_word();
     void stop_word();
-    void stop_word_pick_char();
+    void stop_word_leave_char();
 
     std::string_view m_input{};
 
