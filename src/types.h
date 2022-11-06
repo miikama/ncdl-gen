@@ -169,6 +169,7 @@ class Attribute : public Element
     std::optional<NetCDFType> m_type{};
     std::optional<std::string> m_variable_name{};
     std::string m_attribute_name{};
+    std::string m_value {};
 };
 
 class VariableDimension : public Element

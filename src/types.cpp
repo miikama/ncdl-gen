@@ -227,7 +227,10 @@ std::string Variables::description(int indent) const
         return description.description;
     }
 
+    description.push_indent();
     description << "Attributes";
+    description.push_indent();
+    description.push_indent();
     for (auto &attribute : m_attributes)
     {
         description << attribute.description(indent);
@@ -282,10 +285,65 @@ std::string Attribute::description(int indent) const
     {
         name_part += *m_variable_name;
     }
-    return fmt::format("{}{}:{}", type_part, name_part, m_attribute_name);
+    return fmt::format("{}{}:{} = {}", type_part, name_part, m_attribute_name, m_value);
 }
 
-std::optional<Attribute> Attribute::parse(Parser &parser) { return {}; }
+static std::pair<std::string, std::string>
+split_string_at(std::string_view input, const char split_char) {
+
+    auto split_location = input.find(split_char);
+    if (split_location == std::string::npos || split_location == input.size() - 1){
+        return {};
+    }
+
+    auto first_part = input.substr(0, split_location);
+    auto second_part = input.substr(split_location + 1, input.size() - split_location - 1);
+    return {std::string(first_part), std::string(second_part)};
+}
+
+std::optional<Attribute> Attribute::parse(Parser &parser) {
+
+    auto name = parser.pop();
+    auto equals = parser.pop_specific({"="});
+
+    if(!name || !equals) {
+        return {};
+    }
+
+    auto split_str = split_string_at(name->content(), ':');
+    if (split_str.first.empty() ||  split_str.second.empty()) {
+        std::cout << "Splitting attr name failed\n";
+        return {};
+    }
+
+    auto value = parser.pop();
+    if (!value || value->content().empty())
+    {
+        return {};
+    }
+
+    if(value->content().at(0) == '"') {
+        // Currently supported string attributes
+    }
+    else {
+        std::cout << "Unsupported attribute content " << value->content();
+        return {};
+    }
+
+    Attribute attr {};
+    attr.m_variable_name = split_str.first;
+    attr.m_attribute_name = split_str.second;
+    attr.m_value = value->content();
+
+    auto line_end = parser.pop_specific({";"});
+
+    if (!line_end)
+    {
+        std::cout << "Could not find line end for variable definition\n";
+        return {};
+    }    
+    return attr;    
+}
 
 std::optional<VariableDeclaration::VariableDeclarationType>
 VariableDeclaration::parse(Parser &parser,
