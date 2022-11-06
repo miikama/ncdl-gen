@@ -307,26 +307,32 @@ VariableDeclaration::parse(Parser &parser,
     //    string  country(time,lat,lon);
     //    long    lat(lat), lon(lon), time(time);
     //    float   Z(time,lat,lon), t(time,lat,lon);
-    NetCDFType var_type{NetCDFType::Default};
+    // variable attributes
+    //    lat:long_name = "latitude";
+    //    lat:units = "degrees_north";
+    //    lon:long_name = "longitude";
+    //    lon:units = "degrees_east";
+    //    time:units = "seconds since 1992-1-1 00:00:00";
+
+
+    // Not the first variable for this line
     if (existing_type)
     {
-        var_type = *existing_type;
+        return Variable::parse(parser, *existing_type);
     }
-    else
+    
+    auto type = parser.peek_type();
+
+    // try to parse an attribute because variables have types
+    if (!type)
     {
-        auto type = parser.pop_type();
-        if (!type)
-        {
-            return {};
-        }
-        auto surely_this_is_type_already = type_for_token(*type);
-        if (!surely_this_is_type_already)
-        {
-            return {};
-        }
-        var_type = *surely_this_is_type_already;
+        return Attribute::parse(parser);
     }
-    return Variable::parse(parser, var_type);
+
+    // pop the type
+    parser.pop();
+
+    return Variable::parse(parser, *type);
 }
 
 std::optional<EnumValue> EnumValue::parse(Parser &parser)
