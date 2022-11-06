@@ -26,6 +26,7 @@ class Parser
     peek_specific(const std::vector<std::string> &possible_tokens);
     std::optional<const Token>
     pop_specific(const std::vector<std::string> &possible_tokens);
+    std::optional<NetCDFType> peek_type();
     std::optional<const Token> pop_type();
 
   private:

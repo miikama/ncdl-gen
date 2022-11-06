@@ -67,6 +67,21 @@ Parser::pop_specific(const std::vector<std::string> &possible_tokens)
     return {};
 }
 
+std::optional<NetCDFType> Parser::peek_type()
+{
+    auto token = peek();
+    if ( !token) {
+        return {};
+    }
+
+    auto type = type_for_token(*token);
+    if(type == NetCDFType::Default)
+    {
+        return {};
+    }
+    return type;
+}
+
 std::optional<const Token> Parser::pop_type()
 {
     auto token = pop();
