@@ -173,40 +173,8 @@ std::string Variable::description(int indent) const
 }
 
 std::optional<Variable> Variable::parse(Parser &parser,
-                                        std::optional<NetCDFType> existing_type)
+                                        NetCDFType existing_type)
 {
-    auto next_token = parser.peek();
-    if (!next_token || is_keyword(next_token->content()))
-    {
-        return {};
-    }
-
-    // variables:
-    //    ubyte   tag;
-    //    double  p(time,lat,lon);
-    //    long    rh(time,lat,lon);
-    //    string  country(time,lat,lon);
-    //    long    lat(lat), lon(lon), time(time);
-    //    float   Z(time,lat,lon), t(time,lat,lon);
-    NetCDFType var_type{NetCDFType::Default};
-    if (existing_type)
-    {
-        var_type = *existing_type;
-    }
-    else
-    {
-        auto type = parser.pop_type();
-        if (!type)
-        {
-            return {};
-        }
-        auto surely_this_is_type_already = type_for_token(*type);
-        if (!surely_this_is_type_already)
-        {
-            return {};
-        }
-        var_type = *surely_this_is_type_already;
-    }
     auto name = parser.pop();
     auto line_end_or_open_bracket = parser.pop_specific({"(", ";"});
     if (!name || !line_end_or_open_bracket)
@@ -216,7 +184,7 @@ std::optional<Variable> Variable::parse(Parser &parser,
 
     Variable var{};
     var.m_name = name->content();
-    var.m_type = var_type;
+    var.m_type = existing_type;
 
     if (line_end_or_open_bracket->content() == ";")
     {
@@ -264,21 +232,101 @@ std::optional<Variables> Variables::parse(Parser &parser)
     variables.m_name = "variables:";
 
     std::optional<NetCDFType> previous_type = {};
-    while (auto variable = Variable::parse(parser, previous_type))
+    while (auto variable = VariableDeclaration::parse(parser, previous_type))
     {
-        variables.m_variables.push_back(*variable);
-
-        if (parser.peek_specific({","}))
+        if (std::holds_alternative<Variable>(*variable))
         {
-            previous_type = variables.m_variables.back().type();
-            parser.pop();
+            variables.m_variables.push_back(std::get<Variable>(*variable));
+
+            // multiple variables in one line, continue to following
+            if (parser.peek_specific({","}))
+            {
+                previous_type = variables.m_variables.back().type();
+                parser.pop();
+            }
+            else
+            {
+                previous_type = {};
+            }
+        }
+        else if (std::holds_alternative<Attribute>(*variable))
+        {
+            variables.m_attributes.push_back(std::get<Attribute>(*variable));
         }
         else
         {
-            previous_type = {};
+            throw std::runtime_error("Incorrect type, this is bug.");
         }
     }
     return variables;
+}
+
+std::string Attribute::description(int indent) const
+{
+    std::string type_part{};
+    if (m_type)
+    {
+        type_part += name_for_type(*m_type) + " ";
+    }
+    std::string name_part{};
+    if (m_variable_name)
+    {
+        name_part += *m_variable_name;
+    }
+    return fmt::format("{}{}:{}", type_part, name_part, m_attribute_name);
+}
+
+std::optional<Attribute> Attribute::parse(Parser &parser) { return {}; }
+
+std::string Attributes::description(int indent) const
+{
+    Description description(indent);
+    for (auto &attribute : m_attributes)
+    {
+        description << attribute.description(indent);
+    }
+    return description.description;
+}
+
+std::optional<Attributes> Attributes::parse(Parser &parser) { return {}; }
+
+std::optional<VariableDeclaration::VariableDeclarationType>
+VariableDeclaration::parse(Parser &parser,
+                           std::optional<NetCDFType> existing_type)
+{
+    auto next_token = parser.peek();
+    if (!next_token || is_keyword(next_token->content()))
+    {
+        return {};
+    }
+
+    // variables:
+    //    ubyte   tag;
+    //    double  p(time,lat,lon);
+    //    long    rh(time,lat,lon);
+    //    string  country(time,lat,lon);
+    //    long    lat(lat), lon(lon), time(time);
+    //    float   Z(time,lat,lon), t(time,lat,lon);
+    NetCDFType var_type{NetCDFType::Default};
+    if (existing_type)
+    {
+        var_type = *existing_type;
+    }
+    else
+    {
+        auto type = parser.pop_type();
+        if (!type)
+        {
+            return {};
+        }
+        auto surely_this_is_type_already = type_for_token(*type);
+        if (!surely_this_is_type_already)
+        {
+            return {};
+        }
+        var_type = *surely_this_is_type_already;
+    }
+    return Variable::parse(parser, var_type);
 }
 
 std::optional<EnumValue> EnumValue::parse(Parser &parser)

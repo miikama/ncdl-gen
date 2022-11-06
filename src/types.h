@@ -7,6 +7,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <variant>
 
 #include "tokeniser.h"
 
@@ -157,6 +158,29 @@ class Dimensions : public Element
     std::vector<Dimension> m_dimensions{};
 };
 
+class Attribute : public Element
+{
+  public:
+    std::string description(int indent) const override;
+
+    static std::optional<Attribute> parse(Parser &);
+
+  private:
+    std::optional<NetCDFType> m_type{};
+    std::optional<std::string> m_variable_name{};
+    std::string m_attribute_name{};
+};
+
+class Attributes : public Element
+{
+  public:
+    std::string description(int indent) const override;
+
+    static std::optional<Attributes> parse(Parser &);
+private:
+    std::vector<Attribute> m_attributes {};
+};
+
 class VariableDimension : public Element
 {
   public:
@@ -170,13 +194,25 @@ class Variable : public Element
   public:
     std::string description(int indent) const override;
 
-    static std::optional<Variable> parse(Parser &, std::optional<NetCDFType> existing_type);
+    static std::optional<Variable>
+    parse(Parser &, NetCDFType existing_type);
 
     const NetCDFType type() const { return m_type; }
+
   private:
     double m_value{};
     NetCDFType m_type{NetCDFType::Default};
     std::vector<VariableDimension> m_dimensions{};
+};
+
+struct VariableDeclaration
+{
+    using VariableDeclarationType = std::variant<Variable, Attribute>;
+
+    std::string description(int indent) const;
+
+    static std::optional<VariableDeclarationType>
+    parse(Parser &, std::optional<NetCDFType> existing_type);
 };
 
 class Variables : public Element
@@ -188,6 +224,7 @@ class Variables : public Element
 
   private:
     std::vector<Variable> m_variables{};
+    std::vector<Attribute> m_attributes{};
 };
 
 class Group : public Element
@@ -227,6 +264,7 @@ class Group : public Element
     std::optional<Types> m_types{};
     std::optional<Dimensions> m_dimensions{};
     std::optional<Variables> m_variables{};
+    std::vector<Attributes> m_attributes{};
     std::vector<Group> m_groups{};
 };
 
