@@ -6,8 +6,8 @@
 #include <optional>
 #include <string>
 #include <string_view>
-#include <vector>
 #include <variant>
+#include <vector>
 
 #include "tokeniser.h"
 
@@ -163,13 +163,14 @@ class Attribute : public Element
   public:
     std::string description(int indent) const override;
 
-    static std::optional<Attribute> parse(Parser &);
+    static std::optional<Attribute>
+    parse(Parser &, std::optional<NetCDFType> attribute_type);
 
   private:
     std::optional<NetCDFType> m_type{};
     std::optional<std::string> m_variable_name{};
     std::string m_attribute_name{};
-    std::string m_value {};
+    std::string m_value{};
 };
 
 class VariableDimension : public Element
@@ -185,8 +186,7 @@ class Variable : public Element
   public:
     std::string description(int indent) const override;
 
-    static std::optional<Variable>
-    parse(Parser &, NetCDFType existing_type);
+    static std::optional<Variable> parse(Parser &, NetCDFType existing_type);
 
     const NetCDFType type() const { return m_type; }
 

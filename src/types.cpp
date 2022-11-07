@@ -223,7 +223,8 @@ std::string Variables::description(int indent) const
     {
         description << variable.description(indent + 1);
     }
-    if (m_attributes.empty()) {
+    if (m_attributes.empty())
+    {
         return description.description;
     }
 
@@ -285,33 +286,42 @@ std::string Attribute::description(int indent) const
     {
         name_part += *m_variable_name;
     }
-    return fmt::format("{}{}:{} = {}", type_part, name_part, m_attribute_name, m_value);
+    return fmt::format("{}{}:{} = {}", type_part, name_part, m_attribute_name,
+                       m_value);
 }
 
 static std::pair<std::string, std::string>
-split_string_at(std::string_view input, const char split_char) {
+split_string_at(std::string_view input, const char split_char)
+{
 
     auto split_location = input.find(split_char);
-    if (split_location == std::string::npos || split_location == input.size() - 1){
+    if (split_location == std::string::npos ||
+        split_location == input.size() - 1)
+    {
         return {};
     }
 
     auto first_part = input.substr(0, split_location);
-    auto second_part = input.substr(split_location + 1, input.size() - split_location - 1);
+    auto second_part =
+        input.substr(split_location + 1, input.size() - split_location - 1);
     return {std::string(first_part), std::string(second_part)};
 }
 
-std::optional<Attribute> Attribute::parse(Parser &parser) {
+std::optional<Attribute>
+Attribute::parse(Parser &parser, std::optional<NetCDFType> attribute_type)
+{
 
     auto name = parser.pop();
     auto equals = parser.pop_specific({"="});
 
-    if(!name || !equals) {
+    if (!name || !equals)
+    {
         return {};
     }
 
     auto split_str = split_string_at(name->content(), ':');
-    if (split_str.first.empty() ||  split_str.second.empty()) {
+    if (split_str.first.empty() || split_str.second.empty())
+    {
         std::cout << "Splitting attr name failed\n";
         return {};
     }
@@ -322,18 +332,21 @@ std::optional<Attribute> Attribute::parse(Parser &parser) {
         return {};
     }
 
-    if(value->content().at(0) == '"') {
+    if (value->content().at(0) == '"')
+    {
         // Currently supported string attributes
     }
-    else {
+    else
+    {
         std::cout << "Unsupported attribute content " << value->content();
         return {};
     }
 
-    Attribute attr {};
+    Attribute attr{};
     attr.m_variable_name = split_str.first;
     attr.m_attribute_name = split_str.second;
     attr.m_value = value->content();
+    attr.m_type = attribute_type;
 
     auto line_end = parser.pop_specific({";"});
 
@@ -341,8 +354,8 @@ std::optional<Attribute> Attribute::parse(Parser &parser) {
     {
         std::cout << "Could not find line end for variable definition\n";
         return {};
-    }    
-    return attr;    
+    }
+    return attr;
 }
 
 std::optional<VariableDeclaration::VariableDeclarationType>
@@ -369,23 +382,37 @@ VariableDeclaration::parse(Parser &parser,
     //    lon:units = "degrees_east";
     //    time:units = "seconds since 1992-1-1 00:00:00";
 
-
     // Not the first variable for this line
     if (existing_type)
     {
         return Variable::parse(parser, *existing_type);
     }
-    
+
     auto type = parser.peek_type();
 
     // try to parse an attribute because variables have types
     if (!type)
     {
-        return Attribute::parse(parser);
+        return Attribute::parse(parser, {});
     }
 
     // pop the type
     parser.pop();
+
+    // peek the variable/attribute name
+    auto name = parser.peek();
+    if (!name)
+    {
+        std::cout << "Did not find name for variable\n";
+        return {};
+    }
+
+    // If the name has ':', it is attribute
+    if (!name->content().empty() &&
+        name->content().find(':') != std::string::npos)
+    {
+        return Attribute::parse(parser, type);
+    }
 
     return Variable::parse(parser, *type);
 }
