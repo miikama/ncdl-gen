@@ -360,6 +360,25 @@ Attribute::parse(Parser &parser, std::optional<NetCDFType> attribute_type)
     {
         attr.m_value = value->content();
     }
+    else if (attr.m_attribute_name == "_FillValue") {
+        // TODO: fetch type for untyped attributes from the corresponding variable
+        parser.parse_number(attr.m_type.value_or(NetCDFType::Default));
+        auto fill_value = parser.parse_number(attr.m_type.value_or(NetCDFType::Default));
+        if ( !fill_value) {
+            fmt::print("Could not parse value for attribute '_FillValue'\n");
+            return {};
+        }
+    }
+    else if (attr.m_attribute_name == "valid_range") {
+        // TODO: fetch type for untyped attributes from the corresponding variable
+        auto start = parser.parse_number(attr.m_type.value_or(NetCDFType::Default));
+        auto comma = parser.pop_specific({","});
+        auto end = parser.parse_number(attr.m_type.value_or(NetCDFType::Default));
+        if(!start || !comma || !end){
+            fmt::print("Could not parse value for attribute 'valid_range'\n");
+            return {};
+        }
+    }
     else
     {
         fmt::print("Unsupported attribute '{}'\n", attr.m_attribute_name);
