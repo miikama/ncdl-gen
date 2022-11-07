@@ -310,6 +310,23 @@ split_string_at(std::string_view input, const char split_char)
 std::optional<Attribute>
 Attribute::parse(Parser &parser, std::optional<NetCDFType> attribute_type)
 {
+    // Allowed attribute grammar,
+    // https://manpages.ubuntu.com/manpages/xenial/man1/ncgen.1.html
+    // attrdecl:
+    //          ':' ident '=' datalist
+    //      | typeref type_var_ref ':' ident '=' datalist
+    //      | type_var_ref ':' ident '=' datalist
+    //      | type_var_ref ':' _FILLVALUE '=' datalist
+    //      | typeref type_var_ref ':' _FILLVALUE '=' datalist
+    //      | type_var_ref ':' _STORAGE '=' conststring
+    //      | type_var_ref ':' _CHUNKSIZES '=' intlist
+    //      | type_var_ref ':' _FLETCHER32 '=' constbool
+    //      | type_var_ref ':' _DEFLATELEVEL '=' constint
+    //      | type_var_ref ':' _SHUFFLE '=' constbool
+    //      | type_var_ref ':' _ENDIANNESS '=' conststring
+    //      | type_var_ref ':' _NOFILL '=' constbool
+    //      | ':' _FORMAT '=' conststring
+    //      ;
 
     auto name = parser.pop();
     auto equals = parser.pop_specific({"="});
@@ -332,21 +349,22 @@ Attribute::parse(Parser &parser, std::optional<NetCDFType> attribute_type)
         return {};
     }
 
-    if (value->content().at(0) == '"')
-    {
-        // Currently supported string attributes
-    }
-    else
-    {
-        std::cout << "Unsupported attribute content " << value->content();
-        return {};
-    }
-
     Attribute attr{};
     attr.m_variable_name = split_str.first;
     attr.m_attribute_name = split_str.second;
-    attr.m_value = value->content();
     attr.m_type = attribute_type;
+
+    // Currently supported string attributes
+    if (attr.m_attribute_name == "long_name" ||
+        attr.m_attribute_name == "units")
+    {
+        attr.m_value = value->content();
+    }
+    else
+    {
+        fmt::print("Unsupported attribute '{}'\n", attr.m_attribute_name);
+        return {};
+    }
 
     auto line_end = parser.pop_specific({";"});
 
