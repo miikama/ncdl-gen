@@ -1,4 +1,5 @@
 
+#include <fmt/core.h>
 
 #include "parser.h"
 #include "syntax.h"
@@ -32,16 +33,17 @@ std::optional<const Token> Parser::peek()
     return m_tokens[m_cursor];
 }
 
-std::optional<const Token> Parser::peek_specific(const std::vector<std::string> &possible_tokens)
+std::optional<const Token>
+Parser::peek_specific(const std::vector<std::string> &possible_tokens)
 {
     auto token = peek();
     if (!token)
     {
         return {};
     }
-    for(auto& possible : possible_tokens)
+    for (auto &possible : possible_tokens)
     {
-        if(token->content() == possible)
+        if (token->content() == possible)
         {
             return token;
         }
@@ -57,9 +59,9 @@ Parser::pop_specific(const std::vector<std::string> &possible_tokens)
     {
         return {};
     }
-    for(auto& possible : possible_tokens)
+    for (auto &possible : possible_tokens)
     {
-        if(token->content() == possible)
+        if (token->content() == possible)
         {
             return token;
         }
@@ -70,12 +72,13 @@ Parser::pop_specific(const std::vector<std::string> &possible_tokens)
 std::optional<NetCDFType> Parser::peek_type()
 {
     auto token = peek();
-    if ( !token) {
+    if (!token)
+    {
         return {};
     }
 
     auto type = type_for_token(*token);
-    if(type == NetCDFType::Default)
+    if (type == NetCDFType::Default)
     {
         return {};
     }
@@ -85,15 +88,38 @@ std::optional<NetCDFType> Parser::peek_type()
 std::optional<const Token> Parser::pop_type()
 {
     auto token = pop();
-    if ( !token) {
+    if (!token)
+    {
         return {};
     }
 
-    if(type_for_token(*token) == NetCDFType::Default)
+    if (type_for_token(*token) == NetCDFType::Default)
     {
         return {};
     }
     return token;
 }
+
+std::optional<Number> Parser::parse_number(NetCDFType type)
+{
+    switch (type)
+    {
+    case NetCDFType::Float:
+    {
+        auto res = parse_float();
+        if (!res)
+        {
+            return {};
+        }
+        return Number(*res, NetCDFType::Float);
+    }
+
+    default:
+        fmt::print("Cannot parse number of type {}\n", name_for_type(type));
+        return {};
+    }
+}
+
+std::optional<float> Parser::parse_float() { return {}; }
 
 } // namespace ncdlgen
