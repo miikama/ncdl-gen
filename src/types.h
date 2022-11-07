@@ -14,23 +14,6 @@
 namespace ncdlgen
 {
 
-class Parser;
-
-class Element
-{
-
-  public:
-    Element() = default;
-    Element(const std::string_view &name) : m_name(name) {}
-    virtual ~Element() = default;
-
-    virtual std::string description(int indent) const = 0;
-    const std::string_view name() const { return m_name; };
-
-  protected:
-    std::string m_name{};
-};
-
 enum class NetCDFType
 {
     Char,
@@ -48,6 +31,39 @@ enum class NetCDFType
     Double,
     String,
     Default,
+};
+
+// Forward declaration
+class Parser;
+
+struct Number
+{
+
+    template <typename InternalType>
+    Number(InternalType value, NetCDFType type)
+        : value(value), netcdf_type(type)
+    {
+    }
+
+    std::variant<int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t,
+                 uint64_t, float, double, std::string>
+        value{};
+    NetCDFType netcdf_type{NetCDFType::Default};
+};
+
+class Element
+{
+
+  public:
+    Element() = default;
+    Element(const std::string_view &name) : m_name(name) {}
+    virtual ~Element() = default;
+
+    virtual std::string description(int indent) const = 0;
+    const std::string_view name() const { return m_name; };
+
+  protected:
+    std::string m_name{};
 };
 
 class Type : public Element
