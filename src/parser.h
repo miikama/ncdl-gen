@@ -32,8 +32,6 @@ class Parser
     std::optional<Number> parse_number(NetCDFType);
 
   private:
-    std::optional<float> parse_float();
-
     size_t m_cursor{};
     const std::vector<Token> &m_tokens;
 };
