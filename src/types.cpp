@@ -12,6 +12,12 @@
 namespace ncdlgen
 {
 
+std::string Number::as_string() const
+{
+    return std::visit(
+        [](auto &&arg) -> std::string { return fmt::format("{}", arg); }, value);
+}
+
 std::string OpaqueType::description(int indent) const
 {
     Description description(indent);
@@ -275,7 +281,7 @@ std::optional<Variables> Variables::parse(Parser &parser)
     return variables;
 }
 
-std::string Attribute::value_string() const
+std::string Attribute::as_string() const
 {
     // Use the visitor to go through all types
     return std::visit(
@@ -287,13 +293,11 @@ std::string Attribute::value_string() const
             }
             else if constexpr (std::is_same_v<T, ValidRangeValue>)
             {
-                auto &range = arg;
-                return fmt::format("Range values");
+                return fmt::format("{} - {}", arg.start.as_string(), arg.end.as_string());
             }
             else if constexpr (std::is_same_v<T, FillValueAttributeValue>)
             {
-                auto &value = arg;
-                return fmt::format("FillValue");
+                return fmt::format("{}", arg.as_string());
             }
             else
             {
@@ -316,7 +320,7 @@ std::string Attribute::description(int indent) const
         name_part += *m_variable_name;
     }
     return fmt::format("{}{}:{} = {}", type_part, name_part, m_attribute_name,
-                       value_string());
+                       as_string());
 }
 
 std::optional<Attribute>

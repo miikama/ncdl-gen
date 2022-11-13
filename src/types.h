@@ -45,6 +45,8 @@ struct Number
     {
     }
 
+    std::string as_string() const;
+
     std::variant<int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t,
                  uint64_t, float, double>
         value{};
@@ -189,7 +191,7 @@ class Attribute : public Element
     parse(Parser &, std::optional<NetCDFType> attribute_type);
 
     // Get string representation of the contained value
-    std::string value_string() const;
+    std::string as_string() const;
 
   private:
     std::optional<NetCDFType> m_type{};
