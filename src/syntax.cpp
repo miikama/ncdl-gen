@@ -17,101 +17,101 @@ bool is_keyword(const std::string_view word)
     return keywords.find(word) != keywords.end();
 }
 
-std::optional<NetCDFType> type_for_token(const Token &token)
+std::optional<NetCDFElementaryType> type_for_token(const Token &token)
 {
     if (token.content() == "char")
     {
-        return NetCDFType::Char;
+        return NetCDFElementaryType::Char;
     }
     else if (token.content() == "byte")
     {
-        return NetCDFType::Byte;
+        return NetCDFElementaryType::Byte;
     }
     else if (token.content() == "ubyte")
     {
-        return NetCDFType::Ubyte;
+        return NetCDFElementaryType::Ubyte;
     }
     else if (token.content() == "short")
     {
-        return NetCDFType::Short;
+        return NetCDFElementaryType::Short;
     }
     else if (token.content() == "ushort")
     {
-        return NetCDFType::Ushort;
+        return NetCDFElementaryType::Ushort;
     }
     else if (token.content() == "int")
     {
-        return NetCDFType::Int;
+        return NetCDFElementaryType::Int;
     }
     else if (token.content() == "uint")
     {
-        return NetCDFType::Uint;
+        return NetCDFElementaryType::Uint;
     }
     else if (token.content() == "long")
     {
-        return NetCDFType::Long;
+        return NetCDFElementaryType::Long;
     }
     else if (token.content() == "int64")
     {
-        return NetCDFType::Int64;
+        return NetCDFElementaryType::Int64;
     }
     else if (token.content() == "uint64")
     {
-        return NetCDFType::Uint64;
+        return NetCDFElementaryType::Uint64;
     }
     else if (token.content() == "float")
     {
-        return NetCDFType::Float;
+        return NetCDFElementaryType::Float;
     }
     else if (token.content() == "real")
     {
-        return NetCDFType::Real;
+        return NetCDFElementaryType::Real;
     }
     else if (token.content() == "double")
     {
-        return NetCDFType::Double;
+        return NetCDFElementaryType::Double;
     }
     else if (token.content() == "string")
     {
-        return NetCDFType::String;
+        return NetCDFElementaryType::String;
     }
     else
     {
-        return NetCDFType::Default;
+        return NetCDFElementaryType::Default;
     }
 }
 
-const std::string_view name_for_type(const NetCDFType &type)
+const std::string_view name_for_type(const NetCDFElementaryType &type)
 {
     switch (type)
     {
-    case NetCDFType::Char:
+    case NetCDFElementaryType::Char:
         return "char";
-    case NetCDFType::Byte:
+    case NetCDFElementaryType::Byte:
         return "byte";
-    case NetCDFType::Ubyte:
+    case NetCDFElementaryType::Ubyte:
         return "ubyte";
-    case NetCDFType::Short:
+    case NetCDFElementaryType::Short:
         return "short";
-    case NetCDFType::Ushort:
+    case NetCDFElementaryType::Ushort:
         return "ushort";
-    case NetCDFType::Int:
+    case NetCDFElementaryType::Int:
         return "int";
-    case NetCDFType::Uint:
+    case NetCDFElementaryType::Uint:
         return "uint";
-    case NetCDFType::Long:
+    case NetCDFElementaryType::Long:
         return "long";
-    case NetCDFType::Int64:
+    case NetCDFElementaryType::Int64:
         return "int64";
-    case NetCDFType::Uint64:
+    case NetCDFElementaryType::Uint64:
         return "uint64";
-    case NetCDFType::Float:
+    case NetCDFElementaryType::Float:
         return "float";
-    case NetCDFType::Real:
+    case NetCDFElementaryType::Real:
         return "real";
-    case NetCDFType::Double:
+    case NetCDFElementaryType::Double:
         return "double";
-    case NetCDFType::String:
+    case NetCDFElementaryType::String:
         return "string";
     default:
         return "unknown";

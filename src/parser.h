@@ -27,9 +27,9 @@ class Parser
     peek_specific(const std::vector<std::string> &possible_tokens);
     std::optional<const Token>
     pop_specific(const std::vector<std::string> &possible_tokens);
-    std::optional<NetCDFType> peek_type();
+    std::optional<NetCDFElementaryType> peek_type();
 
-    std::optional<Number> parse_number(NetCDFType);
+    std::optional<Number> parse_number(NetCDFElementaryType);
 
     void push_group_stack(Group &group) { group_stack.push_back(&group); }
     void pop_group_stack() { group_stack.pop_back(); }
@@ -40,7 +40,7 @@ class Parser
      * these are the basic NetCDF types, but for user defined
      * types, resolve typename to the actual type
      */
-    std::optional<NetCDFType>
+    std::optional<NetCDFElementaryType>
     resolve_type_for_name(const std::string_view type_name);
 
     size_t m_cursor{};

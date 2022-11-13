@@ -14,7 +14,7 @@
 namespace ncdlgen
 {
 
-enum class NetCDFType
+enum class NetCDFElementaryType
 {
     Char,
     Byte,
@@ -40,7 +40,7 @@ struct Number
 {
 
     template <typename InternalType>
-    Number(InternalType value, NetCDFType type)
+    Number(InternalType value, NetCDFElementaryType type)
         : value(value), netcdf_type(type)
     {
     }
@@ -50,7 +50,7 @@ struct Number
     std::variant<int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t,
                  uint64_t, float, double>
         value{};
-    NetCDFType netcdf_type{NetCDFType::Default};
+    NetCDFElementaryType netcdf_type{NetCDFElementaryType::Default};
 };
 
 class Element
@@ -113,7 +113,7 @@ class EnumType : public Type
     friend class Type;
 
   public:
-    EnumType(const std::string_view &name, const NetCDFType type)
+    EnumType(const std::string_view &name, const NetCDFElementaryType type)
         : m_type(type), Type(name)
     {
     }
@@ -123,14 +123,14 @@ class EnumType : public Type
     const bool is_enum() const override { return true; }
 
   private:
-    NetCDFType m_type{NetCDFType::Default};
+    NetCDFElementaryType m_type{NetCDFElementaryType::Default};
     std::vector<EnumValue> m_values{};
 };
 
 class VLenType : public Type
 {
   public:
-    VLenType(const std::string_view &name, const NetCDFType type)
+    VLenType(const std::string_view &name, const NetCDFElementaryType type)
         : m_type(type), Type(name)
     {
     }
@@ -140,7 +140,7 @@ class VLenType : public Type
     const bool is_vlen() const override { return true; }
 
   private:
-    NetCDFType m_type{NetCDFType::Default};
+    NetCDFElementaryType m_type{NetCDFElementaryType::Default};
 };
 
 struct Types
@@ -184,13 +184,13 @@ class Attribute : public Element
     std::string description(int indent) const override;
 
     static std::optional<Attribute>
-    parse(Parser &, std::optional<NetCDFType> attribute_type);
+    parse(Parser &, std::optional<NetCDFElementaryType> attribute_type);
 
     // Get string representation of the contained value
     std::string as_string() const;
 
   private:
-    std::optional<NetCDFType> m_type{};
+    std::optional<NetCDFElementaryType> m_type{};
     std::optional<std::string> m_variable_name{};
     std::string m_attribute_name{};
 
@@ -213,13 +213,13 @@ class Variable : public Element
   public:
     std::string description(int indent) const override;
 
-    static std::optional<Variable> parse(Parser &, NetCDFType existing_type);
+    static std::optional<Variable> parse(Parser &, NetCDFElementaryType existing_type);
 
-    const NetCDFType type() const { return m_type; }
+    const NetCDFElementaryType type() const { return m_type; }
 
   private:
     double m_value{};
-    NetCDFType m_type{NetCDFType::Default};
+    NetCDFElementaryType m_type{NetCDFElementaryType::Default};
     std::vector<VariableDimension> m_dimensions{};
 };
 
@@ -230,7 +230,7 @@ struct VariableDeclaration
     std::string description(int indent) const;
 
     static std::optional<VariableDeclarationType>
-    parse(Parser &, std::optional<NetCDFType> existing_type);
+    parse(Parser &, std::optional<NetCDFElementaryType> existing_type);
 };
 
 class Variables : public Element

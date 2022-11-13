@@ -180,7 +180,7 @@ std::string Variable::description(int indent) const
 }
 
 std::optional<Variable> Variable::parse(Parser &parser,
-                                        NetCDFType existing_type)
+                                        NetCDFElementaryType existing_type)
 {
     auto name = parser.pop();
     auto line_end_or_open_bracket = parser.pop_specific({"(", ";"});
@@ -251,7 +251,7 @@ std::optional<Variables> Variables::parse(Parser &parser)
     Variables variables{};
     variables.m_name = "variables:";
 
-    std::optional<NetCDFType> previous_type = {};
+    std::optional<NetCDFElementaryType> previous_type = {};
     while (auto variable = VariableDeclaration::parse(parser, previous_type))
     {
         if (std::holds_alternative<Variable>(*variable))
@@ -324,7 +324,7 @@ std::string Attribute::description(int indent) const
 }
 
 std::optional<Attribute>
-Attribute::parse(Parser &parser, std::optional<NetCDFType> attribute_type)
+Attribute::parse(Parser &parser, std::optional<NetCDFElementaryType> attribute_type)
 {
     // Allowed attribute grammar,
     // https://manpages.ubuntu.com/manpages/xenial/man1/ncgen.1.html
@@ -384,7 +384,7 @@ Attribute::parse(Parser &parser, std::optional<NetCDFType> attribute_type)
         // TODO: fetch type for untyped attributes from the corresponding
         // variable
         auto fill_value =
-            parser.parse_number(attr.m_type.value_or(NetCDFType::Default));
+            parser.parse_number(attr.m_type.value_or(NetCDFElementaryType::Default));
         if (!fill_value)
         {
             fmt::print("Could not parse value for attribute '_FillValue'\n");
@@ -397,10 +397,10 @@ Attribute::parse(Parser &parser, std::optional<NetCDFType> attribute_type)
         // TODO: fetch type for untyped attributes from the corresponding
         // variable
         auto start =
-            parser.parse_number(attr.m_type.value_or(NetCDFType::Default));
+            parser.parse_number(attr.m_type.value_or(NetCDFElementaryType::Default));
         auto comma = parser.pop_specific({","});
         auto end =
-            parser.parse_number(attr.m_type.value_or(NetCDFType::Default));
+            parser.parse_number(attr.m_type.value_or(NetCDFElementaryType::Default));
         if (!start || !comma || !end)
         {
             fmt::print("Could not parse value for attribute 'valid_range'\n");
@@ -426,7 +426,7 @@ Attribute::parse(Parser &parser, std::optional<NetCDFType> attribute_type)
 
 std::optional<VariableDeclaration::VariableDeclarationType>
 VariableDeclaration::parse(Parser &parser,
-                           std::optional<NetCDFType> existing_type)
+                           std::optional<NetCDFElementaryType> existing_type)
 {
     auto next_token = parser.peek();
     if (!next_token || is_keyword(next_token->content()))

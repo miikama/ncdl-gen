@@ -69,7 +69,7 @@ Parser::pop_specific(const std::vector<std::string> &possible_tokens)
     return {};
 }
 
-std::optional<NetCDFType> Parser::peek_type()
+std::optional<NetCDFElementaryType> Parser::peek_type()
 {
     auto token = peek();
     if (!token)
@@ -80,12 +80,12 @@ std::optional<NetCDFType> Parser::peek_type()
     return resolve_type_for_name(token->content());
 }
 
-std::optional<NetCDFType>
+std::optional<NetCDFElementaryType>
 Parser::resolve_type_for_name(const std::string_view type_name)
 {
     // Basic type
     auto type = type_for_token({type_name});
-    if (type != NetCDFType::Default)
+    if (type != NetCDFElementaryType::Default)
     {
         return type;
     }
@@ -93,7 +93,7 @@ Parser::resolve_type_for_name(const std::string_view type_name)
     return {};
 }
 
-std::optional<Number> Parser::parse_number(NetCDFType type)
+std::optional<Number> Parser::parse_number(NetCDFElementaryType type)
 {
     auto number_token = pop();
     if (!number_token)
@@ -120,59 +120,67 @@ std::optional<Number> Parser::parse_number(NetCDFType type)
     {
         switch (type)
         {
-        case NetCDFType::Char:
+        case NetCDFElementaryType::Char:
         {
-            return Number(std::stoi(number_string), NetCDFType::Char);
+            return Number(std::stoi(number_string), NetCDFElementaryType::Char);
         }
-        case NetCDFType::Byte:
+        case NetCDFElementaryType::Byte:
         {
-            return Number(std::stoi(number_string), NetCDFType::Byte);
+            return Number(std::stoi(number_string), NetCDFElementaryType::Byte);
         }
-        case NetCDFType::Ubyte:
+        case NetCDFElementaryType::Ubyte:
         {
-            return Number(std::stoul(number_string), NetCDFType::Ubyte);
+            return Number(std::stoul(number_string),
+                          NetCDFElementaryType::Ubyte);
         }
-        case NetCDFType::Short:
+        case NetCDFElementaryType::Short:
         {
-            return Number(std::stoi(number_string), NetCDFType::Short);
+            return Number(std::stoi(number_string),
+                          NetCDFElementaryType::Short);
         }
-        case NetCDFType::Ushort:
+        case NetCDFElementaryType::Ushort:
         {
-            return Number(std::stoul(number_string), NetCDFType::Ushort);
+            return Number(std::stoul(number_string),
+                          NetCDFElementaryType::Ushort);
         }
-        case NetCDFType::Int:
+        case NetCDFElementaryType::Int:
         {
-            return Number(std::stoi(number_string), NetCDFType::Int);
+            return Number(std::stoi(number_string), NetCDFElementaryType::Int);
         }
-        case NetCDFType::Uint:
+        case NetCDFElementaryType::Uint:
         {
-            return Number(std::stoul(number_string), NetCDFType::Uint);
+            return Number(std::stoul(number_string),
+                          NetCDFElementaryType::Uint);
         }
         // Same as Int
-        case NetCDFType::Long:
+        case NetCDFElementaryType::Long:
         {
-            return Number(std::stoi(number_string), NetCDFType::Long);
+            return Number(std::stoi(number_string), NetCDFElementaryType::Long);
         }
-        case NetCDFType::Int64:
+        case NetCDFElementaryType::Int64:
         {
-            return Number(std::stol(number_string), NetCDFType::Float);
+            return Number(std::stol(number_string),
+                          NetCDFElementaryType::Float);
         }
-        case NetCDFType::Uint64:
+        case NetCDFElementaryType::Uint64:
         {
-            return Number(std::stoul(number_string), NetCDFType::Float);
+            return Number(std::stoul(number_string),
+                          NetCDFElementaryType::Float);
         }
-        case NetCDFType::Float:
+        case NetCDFElementaryType::Float:
         {
-            return Number(std::stof(number_string), NetCDFType::Float);
+            return Number(std::stof(number_string),
+                          NetCDFElementaryType::Float);
         }
-        case NetCDFType::Double:
+        case NetCDFElementaryType::Double:
         {
-            return Number(std::stof(number_string), NetCDFType::Double);
+            return Number(std::stof(number_string),
+                          NetCDFElementaryType::Double);
         }
         // same as float
-        case NetCDFType::Real:
+        case NetCDFElementaryType::Real:
         {
-            return Number(std::stof(number_string), NetCDFType::Real);
+            return Number(std::stof(number_string), NetCDFElementaryType::Real);
         }
 
         default:
