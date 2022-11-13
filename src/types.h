@@ -14,6 +14,14 @@
 namespace ncdlgen
 {
 
+/**
+ * This type business needs rethinking at some point
+ */
+struct UserType
+{
+    std::string name{};
+};
+
 enum class NetCDFElementaryType
 {
     Char,
@@ -33,6 +41,16 @@ enum class NetCDFElementaryType
     Default,
 };
 
+struct NetCDFType
+{
+    constexpr NetCDFType(const NetCDFElementaryType &type) : type(type) {}
+    constexpr NetCDFType(const UserType &type) : type(type) {}
+
+    std::variant<NetCDFElementaryType, UserType> type;
+
+    std::string_view name() const;
+};
+
 // Forward declaration
 class Parser;
 
@@ -40,16 +58,13 @@ struct Number
 {
 
     template <typename InternalType>
-    Number(InternalType value, NetCDFElementaryType type)
-        : value(value), netcdf_type(type)
+    Number(InternalType value, NetCDFElementaryType type) : value(value), netcdf_type(type)
     {
     }
 
     std::string as_string() const;
 
-    std::variant<int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t,
-                 uint64_t, float, double>
-        value{};
+    std::variant<int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t, uint64_t, float, double> value{};
     NetCDFElementaryType netcdf_type{NetCDFElementaryType::Default};
 };
 
@@ -87,10 +102,7 @@ using DimensionLength = size_t;
 class OpaqueType : public Type
 {
   public:
-    OpaqueType(const std::string_view &name, const size_t &length)
-        : m_length(length), Type(name)
-    {
-    }
+    OpaqueType(const std::string_view &name, const size_t &length) : m_length(length), Type(name) {}
 
     std::string description(int indent) const override;
 
@@ -113,10 +125,7 @@ class EnumType : public Type
     friend class Type;
 
   public:
-    EnumType(const std::string_view &name, const NetCDFElementaryType type)
-        : m_type(type), Type(name)
-    {
-    }
+    EnumType(const std::string_view &name, const NetCDFElementaryType type) : m_type(type), Type(name) {}
 
     std::string description(int indent) const override;
 
@@ -130,10 +139,7 @@ class EnumType : public Type
 class VLenType : public Type
 {
   public:
-    VLenType(const std::string_view &name, const NetCDFElementaryType type)
-        : m_type(type), Type(name)
-    {
-    }
+    VLenType(const std::string_view &name, const NetCDFElementaryType type) : m_type(type), Type(name) {}
 
     std::string description(int indent) const override;
 
@@ -172,7 +178,8 @@ class Dimensions : public Element
     std::vector<Dimension> m_dimensions{};
 };
 
-struct ValidRangeValue {
+struct ValidRangeValue
+{
     Number start;
     Number end;
 };
@@ -183,14 +190,13 @@ class Attribute : public Element
   public:
     std::string description(int indent) const override;
 
-    static std::optional<Attribute>
-    parse(Parser &, std::optional<NetCDFElementaryType> attribute_type);
+    static std::optional<Attribute> parse(Parser &, std::optional<NetCDFType> attribute_type);
 
     // Get string representation of the contained value
     std::string as_string() const;
 
   private:
-    std::optional<NetCDFElementaryType> m_type{};
+    std::optional<NetCDFType> m_type{};
     std::optional<std::string> m_variable_name{};
     std::string m_attribute_name{};
 
@@ -213,13 +219,13 @@ class Variable : public Element
   public:
     std::string description(int indent) const override;
 
-    static std::optional<Variable> parse(Parser &, NetCDFElementaryType existing_type);
+    static std::optional<Variable> parse(Parser &, NetCDFType existing_type);
 
-    const NetCDFElementaryType type() const { return m_type; }
+    const NetCDFType type() const { return m_type; }
 
   private:
     double m_value{};
-    NetCDFElementaryType m_type{NetCDFElementaryType::Default};
+    NetCDFType m_type{NetCDFElementaryType::Default};
     std::vector<VariableDimension> m_dimensions{};
 };
 
@@ -229,8 +235,7 @@ struct VariableDeclaration
 
     std::string description(int indent) const;
 
-    static std::optional<VariableDeclarationType>
-    parse(Parser &, std::optional<NetCDFElementaryType> existing_type);
+    static std::optional<VariableDeclarationType> parse(Parser &, std::optional<NetCDFType> existing_type);
 };
 
 class Variables : public Element
@@ -278,7 +283,7 @@ class Group : public Element
 
     static std::optional<Group> parse(Parser &);
 
-    const std::vector<std::unique_ptr<Type>>& types() const;
+    const std::vector<std::unique_ptr<Type>> &types() const;
 
   private:
     std::optional<Types> m_types{};

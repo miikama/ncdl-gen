@@ -12,10 +12,30 @@
 namespace ncdlgen
 {
 
-std::string Number::as_string() const
+std::string_view NetCDFType::name() const
 {
     return std::visit(
-        [](auto &&arg) -> std::string { return fmt::format("{}", arg); }, value);
+        [](auto &&arg) -> std::string_view {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr (std::is_same_v<T, NetCDFElementaryType>)
+            {
+                return name_for_type(arg);
+            }
+            else if constexpr (std::is_same_v<T, UserType>)
+            {
+                return arg.name;
+            }
+            else
+            {
+                static_assert(always_false_v<T>, "Visiting unsupported type!");
+            }
+        },
+        type);
+}
+
+std::string Number::as_string() const
+{
+    return std::visit([](auto &&arg) -> std::string { return fmt::format("{}", arg); }, value);
 }
 
 std::string OpaqueType::description(int indent) const
@@ -160,7 +180,7 @@ std::optional<VariableDimension> VariableDimension::parse(Parser &parser)
 std::string Variable::description(int indent) const
 {
     Description description(indent, false);
-    description << fmt::format("{} {}", name_for_type(m_type), m_name);
+    description << fmt::format("{} {}", m_type.name(), m_name);
 
     if (m_dimensions.empty())
     {
@@ -179,8 +199,7 @@ std::string Variable::description(int indent) const
     return description.description;
 }
 
-std::optional<Variable> Variable::parse(Parser &parser,
-                                        NetCDFElementaryType existing_type)
+std::optional<Variable> Variable::parse(Parser &parser, NetCDFType existing_type)
 {
     auto name = parser.pop();
     auto line_end_or_open_bracket = parser.pop_specific({"(", ";"});
@@ -251,7 +270,7 @@ std::optional<Variables> Variables::parse(Parser &parser)
     Variables variables{};
     variables.m_name = "variables:";
 
-    std::optional<NetCDFElementaryType> previous_type = {};
+    std::optional<NetCDFType> previous_type = {};
     while (auto variable = VariableDeclaration::parse(parser, previous_type))
     {
         if (std::holds_alternative<Variable>(*variable))
@@ -312,19 +331,17 @@ std::string Attribute::description(int indent) const
     std::string type_part{};
     if (m_type)
     {
-        type_part += fmt::format("{} ", name_for_type(*m_type));
+        type_part += fmt::format("{} ", m_type->name());
     }
     std::string name_part{};
     if (m_variable_name)
     {
         name_part += *m_variable_name;
     }
-    return fmt::format("{}{}:{} = {}", type_part, name_part, m_attribute_name,
-                       as_string());
+    return fmt::format("{}{}:{} = {}", type_part, name_part, m_attribute_name, as_string());
 }
 
-std::optional<Attribute>
-Attribute::parse(Parser &parser, std::optional<NetCDFElementaryType> attribute_type)
+std::optional<Attribute> Attribute::parse(Parser &parser, std::optional<NetCDFType> attribute_type)
 {
     // Allowed attribute grammar,
     // https://manpages.ubuntu.com/manpages/xenial/man1/ncgen.1.html
@@ -345,7 +362,8 @@ Attribute::parse(Parser &parser, std::optional<NetCDFElementaryType> attribute_t
     //      ;
 
     auto name = parser.pop();
-    if ( !name) {
+    if (!name)
+    {
         return {};
     }
 
@@ -359,7 +377,7 @@ Attribute::parse(Parser &parser, std::optional<NetCDFElementaryType> attribute_t
     auto split_str = split_string_at(name->content(), ':');
     if (split_str.first.empty() || split_str.second.empty())
     {
-        fmt::print("Splitting attr name failed\n");
+        fmt::print("Splitting attr name failed for Attribute {}\n", name->content());
         return {};
     }
 
@@ -369,8 +387,7 @@ Attribute::parse(Parser &parser, std::optional<NetCDFElementaryType> attribute_t
     attr.m_type = attribute_type;
 
     // Currently supported string attributes
-    if (attr.m_attribute_name == "long_name" ||
-        attr.m_attribute_name == "units")
+    if (attr.m_attribute_name == "long_name" || attr.m_attribute_name == "units")
     {
         auto value = parser.pop();
         if (!value || value->content().empty())
@@ -383,8 +400,7 @@ Attribute::parse(Parser &parser, std::optional<NetCDFElementaryType> attribute_t
     {
         // TODO: fetch type for untyped attributes from the corresponding
         // variable
-        auto fill_value =
-            parser.parse_number(attr.m_type.value_or(NetCDFElementaryType::Default));
+        auto fill_value = parser.parse_number(attr.m_type.value_or(NetCDFElementaryType::Default));
         if (!fill_value)
         {
             fmt::print("Could not parse value for attribute '_FillValue'\n");
@@ -396,11 +412,9 @@ Attribute::parse(Parser &parser, std::optional<NetCDFElementaryType> attribute_t
     {
         // TODO: fetch type for untyped attributes from the corresponding
         // variable
-        auto start =
-            parser.parse_number(attr.m_type.value_or(NetCDFElementaryType::Default));
+        auto start = parser.parse_number(attr.m_type.value_or(NetCDFElementaryType::Default));
         auto comma = parser.pop_specific({","});
-        auto end =
-            parser.parse_number(attr.m_type.value_or(NetCDFElementaryType::Default));
+        auto end = parser.parse_number(attr.m_type.value_or(NetCDFElementaryType::Default));
         if (!start || !comma || !end)
         {
             fmt::print("Could not parse value for attribute 'valid_range'\n");
@@ -425,8 +439,7 @@ Attribute::parse(Parser &parser, std::optional<NetCDFElementaryType> attribute_t
 }
 
 std::optional<VariableDeclaration::VariableDeclarationType>
-VariableDeclaration::parse(Parser &parser,
-                           std::optional<NetCDFElementaryType> existing_type)
+VariableDeclaration::parse(Parser &parser, std::optional<NetCDFType> existing_type)
 {
     auto next_token = parser.peek();
     if (!next_token || is_keyword(next_token->content()))
@@ -474,8 +487,7 @@ VariableDeclaration::parse(Parser &parser,
     }
 
     // If the name has ':', it is attribute
-    if (!name->content().empty() &&
-        name->content().find(':') != std::string::npos)
+    if (!name->content().empty() && name->content().find(':') != std::string::npos)
     {
         return Attribute::parse(parser, type);
     }
@@ -505,8 +517,7 @@ std::optional<EnumValue> EnumValue::parse(Parser &parser)
         return {};
     }
 
-    EnumValue enum_value{.name = std::string(name->content()),
-                         .value = std::stoi(std::string(value->content()))};
+    EnumValue enum_value{.name = std::string(name->content()), .value = std::stoi(std::string(value->content()))};
     return enum_value;
 }
 
@@ -531,13 +542,11 @@ std::unique_ptr<Type> Type::parse(Parser &parser)
         auto right_brace = parser.pop();
         auto opaque_name = parser.pop();
         auto line_end = parser.pop();
-        if (!left_brace || !opaque_size || !right_brace || !opaque_name ||
-            !line_end)
+        if (!left_brace || !opaque_size || !right_brace || !opaque_name || !line_end)
             return nullptr;
 
-        auto type = std::make_unique<OpaqueType>(
-            opaque_name->content(),
-            std::stoi(std::string(opaque_size->content())));
+        auto type =
+            std::make_unique<OpaqueType>(opaque_name->content(), std::stoi(std::string(opaque_size->content())));
         return type;
     }
 
@@ -554,8 +563,7 @@ std::unique_ptr<Type> Type::parse(Parser &parser)
         if (!left_bracket || !enum_name)
             return {};
 
-        auto enum_type =
-            std::make_unique<EnumType>(enum_name->content(), *actual_type);
+        auto enum_type = std::make_unique<EnumType>(enum_name->content(), *actual_type);
 
         while (auto enum_entry = EnumValue::parse(parser))
         {
@@ -574,8 +582,7 @@ std::unique_ptr<Type> Type::parse(Parser &parser)
     {
         return {};
     }
-    if (left_bracket->content() != "(" || star->content() != "*" ||
-        right_bracket->content() != ")")
+    if (left_bracket->content() != "(" || star->content() != "*" || right_bracket->content() != ")")
     {
         return {};
     }
@@ -691,10 +698,11 @@ std::optional<RootGroup> RootGroup::parse(Parser &parser)
     return root;
 }
 
-const std::vector<std::unique_ptr<Type>>& Group::types() const
+const std::vector<std::unique_ptr<Type>> &Group::types() const
 {
-    static const std::vector<std::unique_ptr<Type>> empty_types {};
-    if(!m_types) {
+    static const std::vector<std::unique_ptr<Type>> empty_types{};
+    if (!m_types)
+    {
         return empty_types;
     }
     return m_types->types;

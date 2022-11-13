@@ -33,8 +33,7 @@ std::optional<const Token> Parser::peek()
     return m_tokens[m_cursor];
 }
 
-std::optional<const Token>
-Parser::peek_specific(const std::vector<std::string> &possible_tokens)
+std::optional<const Token> Parser::peek_specific(const std::vector<std::string> &possible_tokens)
 {
     auto token = peek();
     if (!token)
@@ -51,8 +50,7 @@ Parser::peek_specific(const std::vector<std::string> &possible_tokens)
     return {};
 }
 
-std::optional<const Token>
-Parser::pop_specific(const std::vector<std::string> &possible_tokens)
+std::optional<const Token> Parser::pop_specific(const std::vector<std::string> &possible_tokens)
 {
     auto token = pop();
     if (!token)
@@ -69,7 +67,7 @@ Parser::pop_specific(const std::vector<std::string> &possible_tokens)
     return {};
 }
 
-std::optional<NetCDFElementaryType> Parser::peek_type()
+std::optional<NetCDFType> Parser::peek_type()
 {
     auto token = peek();
     if (!token)
@@ -80,20 +78,32 @@ std::optional<NetCDFElementaryType> Parser::peek_type()
     return resolve_type_for_name(token->content());
 }
 
-std::optional<NetCDFElementaryType>
-Parser::resolve_type_for_name(const std::string_view type_name)
+std::optional<NetCDFType> Parser::resolve_type_for_name(const std::string_view type_name)
 {
     // Basic type
     auto type = type_for_token({type_name});
     if (type != NetCDFElementaryType::Default)
     {
-        return type;
+        return *type;
+    }
+
+    // Possibly complex user defined type
+    for (auto it = group_stack.rbegin(); it != group_stack.rend(); ++it)
+    {
+        const Group *group = *it;
+        for (auto &type : group->types())
+        {
+            if (type->name() == type_name)
+            {
+                return UserType{std::string(type_name)};
+            }
+        }
     }
 
     return {};
 }
 
-std::optional<Number> Parser::parse_number(NetCDFElementaryType type)
+std::optional<Number> Parser::parse_number(NetCDFType type)
 {
     auto number_token = pop();
     if (!number_token)
@@ -101,6 +111,13 @@ std::optional<Number> Parser::parse_number(NetCDFElementaryType type)
         return {};
     }
     auto number_string = std::string(number_token->content());
+
+    if (!std::holds_alternative<NetCDFElementaryType>(type.type))
+    {
+        fmt::print("Parsing number for user defined complex type '{}' is not supported\n", type.name());
+        return {};
+    }
+    auto &basic_type = std::get<NetCDFElementaryType>(type.type);
 
     /**
      * Here we delegate the conversions to std::stoT. This is
@@ -118,7 +135,7 @@ std::optional<Number> Parser::parse_number(NetCDFElementaryType type)
      */
     try
     {
-        switch (type)
+        switch (basic_type)
         {
         case NetCDFElementaryType::Char:
         {
@@ -130,18 +147,15 @@ std::optional<Number> Parser::parse_number(NetCDFElementaryType type)
         }
         case NetCDFElementaryType::Ubyte:
         {
-            return Number(std::stoul(number_string),
-                          NetCDFElementaryType::Ubyte);
+            return Number(std::stoul(number_string), NetCDFElementaryType::Ubyte);
         }
         case NetCDFElementaryType::Short:
         {
-            return Number(std::stoi(number_string),
-                          NetCDFElementaryType::Short);
+            return Number(std::stoi(number_string), NetCDFElementaryType::Short);
         }
         case NetCDFElementaryType::Ushort:
         {
-            return Number(std::stoul(number_string),
-                          NetCDFElementaryType::Ushort);
+            return Number(std::stoul(number_string), NetCDFElementaryType::Ushort);
         }
         case NetCDFElementaryType::Int:
         {
@@ -149,8 +163,7 @@ std::optional<Number> Parser::parse_number(NetCDFElementaryType type)
         }
         case NetCDFElementaryType::Uint:
         {
-            return Number(std::stoul(number_string),
-                          NetCDFElementaryType::Uint);
+            return Number(std::stoul(number_string), NetCDFElementaryType::Uint);
         }
         // Same as Int
         case NetCDFElementaryType::Long:
@@ -159,23 +172,19 @@ std::optional<Number> Parser::parse_number(NetCDFElementaryType type)
         }
         case NetCDFElementaryType::Int64:
         {
-            return Number(std::stol(number_string),
-                          NetCDFElementaryType::Float);
+            return Number(std::stol(number_string), NetCDFElementaryType::Float);
         }
         case NetCDFElementaryType::Uint64:
         {
-            return Number(std::stoul(number_string),
-                          NetCDFElementaryType::Float);
+            return Number(std::stoul(number_string), NetCDFElementaryType::Float);
         }
         case NetCDFElementaryType::Float:
         {
-            return Number(std::stof(number_string),
-                          NetCDFElementaryType::Float);
+            return Number(std::stof(number_string), NetCDFElementaryType::Float);
         }
         case NetCDFElementaryType::Double:
         {
-            return Number(std::stof(number_string),
-                          NetCDFElementaryType::Double);
+            return Number(std::stof(number_string), NetCDFElementaryType::Double);
         }
         // same as float
         case NetCDFElementaryType::Real:
@@ -184,15 +193,13 @@ std::optional<Number> Parser::parse_number(NetCDFElementaryType type)
         }
 
         default:
-            fmt::print("Parsing number of NetCDF type '{}' is not supported\n",
-                       name_for_type(type));
+            fmt::print("Parsing number of NetCDF type '{}' is not supported\n", name_for_type(basic_type));
             return {};
         }
     }
     catch (std::invalid_argument)
     {
-        fmt::print("Could not parse string '{}' as NetCDF type '{}'.\n",
-                   number_string, name_for_type(type));
+        fmt::print("Could not parse string '{}' as NetCDF type '{}'.\n", number_string, name_for_type(basic_type));
         return {};
     }
 }
