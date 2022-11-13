@@ -77,7 +77,7 @@ std::optional<NetCDFType> type_for_token(const Token &token)
     }
     else
     {
-        return {};
+        return NetCDFType::Default;
     }
 }
 
