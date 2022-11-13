@@ -345,17 +345,21 @@ Attribute::parse(Parser &parser, std::optional<NetCDFType> attribute_type)
     //      ;
 
     auto name = parser.pop();
-    auto equals = parser.pop_specific({"="});
+    if ( !name) {
+        return {};
+    }
 
-    if (!name || !equals)
+    auto equals = parser.pop_specific({"="});
+    if (!equals)
     {
+        fmt::print("Could not find '=' for Attribute with parsed name {}\n", name->content());
         return {};
     }
 
     auto split_str = split_string_at(name->content(), ':');
     if (split_str.first.empty() || split_str.second.empty())
     {
-        std::cout << "Splitting attr name failed\n";
+        fmt::print("Splitting attr name failed\n");
         return {};
     }
 
