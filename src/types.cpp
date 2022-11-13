@@ -48,7 +48,7 @@ std::string Types::description(int indent) const
 {
     Description description(indent, false);
     description << "Types\n";
-    for (auto &type : m_types)
+    for (auto &type : types)
     {
         description << type->description(indent + 1);
     }
@@ -586,12 +586,11 @@ std::optional<Types> Types::parse(Parser &parser)
     //     opaque(11) opaque_t;
     //     int(*) vlen_t;
     Types types{};
-    types.m_name = "types:";
     while (auto type = Type::parse(parser))
     {
-        types.m_types.push_back(std::move(type));
+        types.types.push_back(std::move(type));
     }
-    if (types.m_types.empty())
+    if (types.types.empty())
     {
         return {};
     }
@@ -683,6 +682,15 @@ std::optional<RootGroup> RootGroup::parse(Parser &parser)
     root.m_group = Group::parse(parser);
 
     return root;
+}
+
+const std::vector<std::unique_ptr<Type>>& Group::types() const
+{
+    static const std::vector<std::unique_ptr<Type>> empty_types {};
+    if(!m_types) {
+        return empty_types;
+    }
+    return m_types->types;
 }
 
 } // namespace ncdlgen

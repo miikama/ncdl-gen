@@ -143,15 +143,11 @@ class VLenType : public Type
     NetCDFType m_type{NetCDFType::Default};
 };
 
-class Types : public Element
+struct Types
 {
-  public:
-    std::string description(int indent) const override;
-
+    std::string description(int indent) const;
     static std::optional<Types> parse(Parser &);
-
-  private:
-    std::vector<std::unique_ptr<Type>> m_types{};
+    std::vector<std::unique_ptr<Type>> types{};
 };
 
 class Dimension : public Element
@@ -281,6 +277,8 @@ class Group : public Element
     std::string description(int indent) const override;
 
     static std::optional<Group> parse(Parser &);
+
+    const std::vector<std::unique_ptr<Type>>& types() const;
 
   private:
     std::optional<Types> m_types{};
