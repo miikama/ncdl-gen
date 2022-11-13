@@ -631,6 +631,7 @@ std::optional<Group> Group::parse(Parser &parser)
     }
     Group group{};
     group.m_name = group_name->content();
+    parser.push_group_stack(group);
 
     while (auto content = parser.pop())
     {
@@ -663,9 +664,11 @@ std::optional<Group> Group::parse(Parser &parser)
         }
         else if (content->content() == "}")
         {
+            parser.pop_group_stack();
             return group;
         }
     }
+    parser.pop_group_stack();
     return {};
 }
 
