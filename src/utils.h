@@ -3,6 +3,9 @@
 
 #include <string>
 
+// helper constant for the static asserts in template
+template<class> inline constexpr bool always_false_v = false;
+
 std::pair<std::string, std::string> split_string_at(std::string_view input,
                                                     const char split_char)
 {

@@ -174,6 +174,12 @@ class Dimensions : public Element
     std::vector<Dimension> m_dimensions{};
 };
 
+struct ValidRangeValue {
+    Number start;
+    Number end;
+};
+using FillValueAttributeValue = Number;
+
 class Attribute : public Element
 {
   public:
@@ -182,11 +188,18 @@ class Attribute : public Element
     static std::optional<Attribute>
     parse(Parser &, std::optional<NetCDFType> attribute_type);
 
+    // Get string representation of the contained value
+    std::string value_string() const;
+
   private:
     std::optional<NetCDFType> m_type{};
     std::optional<std::string> m_variable_name{};
     std::string m_attribute_name{};
-    std::string m_value{};
+
+    // Either this is a variant of all different attribute value types
+    // or this is handled via inheritance and this is a unique_ptr
+    // to AttributeValue
+    std::variant<std::string, ValidRangeValue, FillValueAttributeValue> m_value{};
 };
 
 class VariableDimension : public Element

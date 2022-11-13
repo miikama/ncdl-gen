@@ -275,6 +275,34 @@ std::optional<Variables> Variables::parse(Parser &parser)
     return variables;
 }
 
+std::string Attribute::value_string() const
+{
+    // Use the visitor to go through all types
+    return std::visit(
+        [](auto &&arg) -> std::string {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr (std::is_same_v<T, std::string>)
+            {
+                return arg;
+            }
+            else if constexpr (std::is_same_v<T, ValidRangeValue>)
+            {
+                auto &range = arg;
+                return fmt::format("Range values");
+            }
+            else if constexpr (std::is_same_v<T, FillValueAttributeValue>)
+            {
+                auto &value = arg;
+                return fmt::format("FillValue");
+            }
+            else
+            {
+                static_assert(always_false_v<T>, "non-exhaustive visitor!");
+            }
+        },
+        m_value);
+}
+
 std::string Attribute::description(int indent) const
 {
     std::string type_part{};
@@ -288,7 +316,7 @@ std::string Attribute::description(int indent) const
         name_part += *m_variable_name;
     }
     return fmt::format("{}{}:{} = {}", type_part, name_part, m_attribute_name,
-                       m_value);
+                       value_string());
 }
 
 std::optional<Attribute>
@@ -327,12 +355,6 @@ Attribute::parse(Parser &parser, std::optional<NetCDFType> attribute_type)
         return {};
     }
 
-    auto value = parser.pop();
-    if (!value || value->content().empty())
-    {
-        return {};
-    }
-
     Attribute attr{};
     attr.m_variable_name = split_str.first;
     attr.m_attribute_name = split_str.second;
@@ -342,26 +364,41 @@ Attribute::parse(Parser &parser, std::optional<NetCDFType> attribute_type)
     if (attr.m_attribute_name == "long_name" ||
         attr.m_attribute_name == "units")
     {
-        attr.m_value = value->content();
+        auto value = parser.pop();
+        if (!value || value->content().empty())
+        {
+            return {};
+        }
+        attr.m_value = std::string(value->content());
     }
-    else if (attr.m_attribute_name == "_FillValue") {
-        // TODO: fetch type for untyped attributes from the corresponding variable
-        parser.parse_number(attr.m_type.value_or(NetCDFType::Default));
-        auto fill_value = parser.parse_number(attr.m_type.value_or(NetCDFType::Default));
-        if ( !fill_value) {
+    else if (attr.m_attribute_name == "_FillValue")
+    {
+        // TODO: fetch type for untyped attributes from the corresponding
+        // variable
+        auto fill_value =
+            parser.parse_number(attr.m_type.value_or(NetCDFType::Default));
+        if (!fill_value)
+        {
             fmt::print("Could not parse value for attribute '_FillValue'\n");
             return {};
         }
+        attr.m_value = *fill_value;
     }
-    else if (attr.m_attribute_name == "valid_range") {
-        // TODO: fetch type for untyped attributes from the corresponding variable
-        auto start = parser.parse_number(attr.m_type.value_or(NetCDFType::Default));
+    else if (attr.m_attribute_name == "valid_range")
+    {
+        // TODO: fetch type for untyped attributes from the corresponding
+        // variable
+        auto start =
+            parser.parse_number(attr.m_type.value_or(NetCDFType::Default));
         auto comma = parser.pop_specific({","});
-        auto end = parser.parse_number(attr.m_type.value_or(NetCDFType::Default));
-        if(!start || !comma || !end){
+        auto end =
+            parser.parse_number(attr.m_type.value_or(NetCDFType::Default));
+        if (!start || !comma || !end)
+        {
             fmt::print("Could not parse value for attribute 'valid_range'\n");
             return {};
         }
+        attr.m_value = ValidRangeValue{*start, *end};
     }
     else
     {
