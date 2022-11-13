@@ -35,6 +35,14 @@ class Parser
     void pop_group_stack() { group_stack.pop_back(); }
 
   private:
+    /**
+     * During parsing, resolve typenames to types. Typically
+     * these are the basic NetCDF types, but for user defined
+     * types, resolve typename to the actual type
+     */
+    std::optional<NetCDFType>
+    resolve_type_for_name(const std::string_view type_name);
+
     size_t m_cursor{};
     const std::vector<Token> &m_tokens;
 

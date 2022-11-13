@@ -77,27 +77,20 @@ std::optional<NetCDFType> Parser::peek_type()
         return {};
     }
 
-    auto type = type_for_token(*token);
-    if (type == NetCDFType::Default)
-    {
-        return {};
-    }
-    return type;
+    return resolve_type_for_name(token->content());
 }
 
-std::optional<const Token> Parser::pop_type()
+std::optional<NetCDFType>
+Parser::resolve_type_for_name(const std::string_view type_name)
 {
-    auto token = pop();
-    if (!token)
+    // Basic type
+    auto type = type_for_token({type_name});
+    if (type != NetCDFType::Default)
     {
-        return {};
+        return type;
     }
 
-    if (type_for_token(*token) == NetCDFType::Default)
-    {
-        return {};
-    }
-    return token;
+    return {};
 }
 
 std::optional<Number> Parser::parse_number(NetCDFType type)
