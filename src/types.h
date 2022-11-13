@@ -46,7 +46,7 @@ struct Number
     }
 
     std::variant<int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t,
-                 uint64_t, float, double, std::string>
+                 uint64_t, float, double>
         value{};
     NetCDFType netcdf_type{NetCDFType::Default};
 };
