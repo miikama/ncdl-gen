@@ -312,7 +312,7 @@ std::string Attribute::description(int indent) const
     std::string type_part{};
     if (m_type)
     {
-        type_part += name_for_type(*m_type) + " ";
+        type_part += fmt::format("{} ", name_for_type(*m_type));
     }
     std::string name_part{};
     if (m_variable_name)

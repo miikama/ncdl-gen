@@ -12,7 +12,7 @@ bool is_keyword(const std::string_view word);
 
 std::optional<NetCDFType> type_for_token(const Token &token);
 
-std::string name_for_type(const NetCDFType &type);
+const std::string_view name_for_type(const NetCDFType &type);
 
 // clang-format off
 template <NetCDFType>
