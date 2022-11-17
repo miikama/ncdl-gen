@@ -1,6 +1,4 @@
 
-#include <iostream>
-
 #include <fmt/core.h>
 
 #include "logging.h"
@@ -113,7 +111,7 @@ std::string RootGroup::description(int indent) const
     return description.description;
 }
 
-void RootGroup::print_tree() { std::cout << description(0); }
+void RootGroup::print_tree() { fmt::print(description(0)); }
 
 std::optional<Dimension> Dimension::parse(Parser &parser)
 {
@@ -234,7 +232,7 @@ std::optional<Variable> Variable::parse(Parser &parser, NetCDFType existing_type
 
     if (!line_end)
     {
-        std::cout << "Could not find line end for variable definition\n";
+        fmt::print("Could not find line end for variable definition for variable {}\n", name->content());
         return {};
     }
 
@@ -398,8 +396,7 @@ std::optional<Attribute> Attribute::parse(Parser &parser, std::optional<NetCDFTy
     }
     else if (attr.m_attribute_name == "_FillValue")
     {
-        // TODO: fetch type for untyped attributes from the corresponding
-        // variable
+        // TODO: fetch type for untyped attributes from the corresponding variable
         auto fill_value = parser.parse_number(attr.m_type.value_or(NetCDFElementaryType::Default));
         if (!fill_value)
         {
@@ -410,8 +407,7 @@ std::optional<Attribute> Attribute::parse(Parser &parser, std::optional<NetCDFTy
     }
     else if (attr.m_attribute_name == "valid_range")
     {
-        // TODO: fetch type for untyped attributes from the corresponding
-        // variable
+        // TODO: fetch type for untyped attributes from the corresponding variable
         auto start = parser.parse_number(attr.m_type.value_or(NetCDFElementaryType::Default));
         auto comma = parser.pop_specific({","});
         auto end = parser.parse_number(attr.m_type.value_or(NetCDFElementaryType::Default));
@@ -432,7 +428,7 @@ std::optional<Attribute> Attribute::parse(Parser &parser, std::optional<NetCDFTy
 
     if (!line_end)
     {
-        std::cout << "Could not find line end for variable definition\n";
+        fmt::print("Could not find line end for variable definition for attribute {}\n", attr.m_attribute_name);
         return {};
     }
     return attr;
@@ -482,7 +478,7 @@ VariableDeclaration::parse(Parser &parser, std::optional<NetCDFType> existing_ty
     auto name = parser.peek();
     if (!name)
     {
-        std::cout << "Did not find name for variable\n";
+        fmt::print("Did not find name for variable\n");
         return {};
     }
 
@@ -648,26 +644,26 @@ std::optional<Group> Group::parse(Parser &parser)
     {
         if (content->content() == "dimensions:")
         {
-            std::cout << "parsing dimensions\n";
+            fmt::print("parsing dimensions\n");
             group.m_dimensions = Dimensions::parse(parser);
         }
         else if (content->content() == "types:")
         {
-            std::cout << "parsing types\n";
+            fmt::print("parsing types\n");
             group.m_types = Types::parse(parser);
         }
         else if (content->content() == "data:")
         {
-            std::cout << "parsing data\n";
+            fmt::print("parsing data\n");
         }
         else if (content->content() == "variables:")
         {
-            std::cout << "parsing variables\n";
+            fmt::print("parsing variables\n");
             group.m_variables = Variables::parse(parser);
         }
         else if (content->content() == "group:")
         {
-            std::cout << "parsing group\n";
+            fmt::print("parsing group\n");
             if (auto child_group = Group::parse(parser))
             {
                 group.m_groups.push_back(std::move(*child_group));
