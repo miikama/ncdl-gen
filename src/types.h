@@ -82,34 +82,16 @@ class Element
   protected:
     std::string m_name{};
 };
-
-class Type : public Element
-{
-  public:
-    Type(const std::string_view &name) : Element(name) {}
-
-    virtual std::string description(int indent) const = 0;
-
-    static std::unique_ptr<Type> parse(Parser &);
-
-    virtual const bool is_opaque() const { return false; }
-    virtual const bool is_vlen() const { return false; }
-    virtual const bool is_enum() const { return false; }
-};
-
 using DimensionLength = size_t;
 
-class OpaqueType : public Type
+struct OpaqueType
 {
-  public:
-    OpaqueType(const std::string_view &name, const size_t &length) : m_length(length), Type(name) {}
+    OpaqueType(const std::string_view &name, const size_t &length) : length(length), name(name) {}
 
-    std::string description(int indent) const override;
+    std::string as_string() const;
 
-    const bool is_opaque() const override { return true; }
-
-  private:
-    DimensionLength m_length{};
+    DimensionLength length{};
+    std::string name{};
 };
 
 struct EnumValue
@@ -120,40 +102,46 @@ struct EnumValue
     static std::optional<EnumValue> parse(Parser &);
 };
 
-class EnumType : public Type
+struct EnumType
 {
-    friend class Type;
+    EnumType(const std::string_view &name, const NetCDFElementaryType type) : type(type), name(name) {}
 
-  public:
-    EnumType(const std::string_view &name, const NetCDFElementaryType type) : m_type(type), Type(name) {}
+    std::string as_string() const;
 
-    std::string description(int indent) const override;
-
-    const bool is_enum() const override { return true; }
-
-  private:
-    NetCDFElementaryType m_type{NetCDFElementaryType::Default};
-    std::vector<EnumValue> m_values{};
+    NetCDFElementaryType type{NetCDFElementaryType::Default};
+    std::vector<EnumValue> enum_values{};
+    std::string name{};
 };
 
-class VLenType : public Type
+struct VLenType
 {
-  public:
-    VLenType(const std::string_view &name, const NetCDFElementaryType type) : m_type(type), Type(name) {}
+    VLenType(const std::string_view &name, const NetCDFElementaryType type) : type(type), name(name) {}
 
-    std::string description(int indent) const override;
+    std::string as_string() const;
 
-    const bool is_vlen() const override { return true; }
+    NetCDFElementaryType type{NetCDFElementaryType::Default};
+    std::string name{};
+};
 
-  private:
-    NetCDFElementaryType m_type{NetCDFElementaryType::Default};
+struct ComplexType
+{
+    explicit ComplexType(OpaqueType type) : type(type) {}
+    explicit ComplexType(VLenType type) : type(type) {}
+    explicit ComplexType(EnumType type) : type(type) {}
+
+    std::string description() const;
+    std::string name() const;
+
+    static std::optional<ComplexType> parse(Parser &);
+
+    std::variant<OpaqueType, EnumType, VLenType> type;
 };
 
 struct Types
 {
     std::string description(int indent) const;
     static std::optional<Types> parse(Parser &);
-    std::vector<std::unique_ptr<Type>> types{};
+    std::vector<ComplexType> types{};
 };
 
 class Dimension : public Element
@@ -283,7 +271,7 @@ class Group : public Element
 
     static std::optional<Group> parse(Parser &);
 
-    const std::vector<std::unique_ptr<Type>> &types() const;
+    const std::vector<ComplexType> &types() const;
 
   private:
     std::optional<Types> m_types{};

@@ -36,39 +36,38 @@ std::string Number::as_string() const
     return std::visit([](auto &&arg) -> std::string { return fmt::format("{}", arg); }, value);
 }
 
-std::string OpaqueType::description(int indent) const
+std::string OpaqueType::as_string() const { return fmt::format("OpaqueType opaque({}) {}", length, name); }
+std::string EnumType::as_string() const
 {
-    Description description(indent);
-    description << fmt::format("OpaqueType opaque({}) {}", m_length, m_name);
-    return description.description;
-}
-std::string EnumType::description(int indent) const
-{
-    Description description(indent);
-    description << fmt::format("EnumType {} {}", m_name, name_for_type(m_type));
-    description.push_indent();
-    description.push_indent();
-    description.push_indent();
-    for (auto &value : m_values)
+    std::string type_name = fmt::format("EnumType {} {}: [ ", name, name_for_type(type));
+    for (auto &value : enum_values)
     {
-        description << fmt::format("{} = {}", value.name, value.value);
+        type_name += fmt::format(" {} = {} ", value.name, value.value);
     }
-    return description.description;
+    return fmt::format("{} ]", type_name);
 }
-std::string VLenType::description(int indent) const
+std::string VLenType::as_string() const { return fmt::format("VLenType {} (*)", name_for_type(type)); }
+
+std::string ComplexType::description() const
 {
-    Description description(indent);
-    description << fmt::format("VLenType {} (*)", name_for_type(m_type));
-    return description.description;
+    return std::visit([](auto &&arg) -> std::string { return arg.as_string(); }, type);
+}
+
+std::string ComplexType::name() const
+{
+    return std::visit([](auto &&arg) -> std::string { return arg.name; }, type);
 }
 
 std::string Types::description(int indent) const
 {
-    Description description(indent, false);
-    description << "Types\n";
+    Description description(indent, true);
+    description << "Types";
+    description.push_indent();
+    description.push_indent();
+    description.push_indent();
     for (auto &type : types)
     {
-        description << type->description(indent + 1);
+        description << type.description();
     }
     return description.description;
 }
@@ -373,10 +372,15 @@ std::optional<Attribute> Attribute::parse(Parser &parser, std::optional<NetCDFTy
     }
 
     auto split_str = split_string_at(name->content(), ':');
-    if (split_str.first.empty() || split_str.second.empty())
+    if (split_str.second.empty())
     {
         fmt::print("Splitting attr name failed for Attribute {}\n", name->content());
         return {};
+    }
+    // Global attribute
+    if (split_str.first.empty())
+    {
+        fmt::print("Thinking attribute {} is global and it has type {}.\n", split_str.second, attribute_type->name());
     }
 
     Attribute attr{};
@@ -517,18 +521,18 @@ std::optional<EnumValue> EnumValue::parse(Parser &parser)
     return enum_value;
 }
 
-std::unique_ptr<Type> Type::parse(Parser &parser)
+std::optional<ComplexType> ComplexType::parse(Parser &parser)
 {
 
     auto next_token = parser.peek();
     if (!next_token || is_keyword(next_token->content()))
     {
-        return nullptr;
+        return {};
     }
 
     auto type_name = parser.pop();
     if (!type_name)
-        return nullptr;
+        return {};
 
     if (type_name->content() == "opaque")
     {
@@ -539,11 +543,9 @@ std::unique_ptr<Type> Type::parse(Parser &parser)
         auto opaque_name = parser.pop();
         auto line_end = parser.pop();
         if (!left_brace || !opaque_size || !right_brace || !opaque_name || !line_end)
-            return nullptr;
+            return {};
 
-        auto type =
-            std::make_unique<OpaqueType>(opaque_name->content(), std::stoi(std::string(opaque_size->content())));
-        return type;
+        return ComplexType{OpaqueType(opaque_name->content(), std::stoi(std::string(opaque_size->content())))};
     }
 
     auto actual_type = type_for_token(*type_name);
@@ -559,13 +561,13 @@ std::unique_ptr<Type> Type::parse(Parser &parser)
         if (!left_bracket || !enum_name)
             return {};
 
-        auto enum_type = std::make_unique<EnumType>(enum_name->content(), *actual_type);
+        auto enum_type = EnumType(enum_name->content(), *actual_type);
 
         while (auto enum_entry = EnumValue::parse(parser))
         {
-            enum_type->m_values.push_back(*enum_entry);
+            enum_type.enum_values.push_back(*enum_entry);
         }
-        return enum_type;
+        return ComplexType(enum_type);
     }
 
     //     int(*) vlen_t;
@@ -583,7 +585,7 @@ std::unique_ptr<Type> Type::parse(Parser &parser)
         return {};
     }
 
-    return std::make_unique<VLenType>(vlen_name->content(), *actual_type);
+    return ComplexType{VLenType(vlen_name->content(), *actual_type)};
 }
 
 std::optional<Types> Types::parse(Parser &parser)
@@ -593,9 +595,9 @@ std::optional<Types> Types::parse(Parser &parser)
     //     opaque(11) opaque_t;
     //     int(*) vlen_t;
     Types types{};
-    while (auto type = Type::parse(parser))
+    while (auto type = ComplexType::parse(parser))
     {
-        types.types.push_back(std::move(type));
+        types.types.push_back(std::move(*type));
     }
     if (types.types.empty())
     {
@@ -694,9 +696,9 @@ std::optional<RootGroup> RootGroup::parse(Parser &parser)
     return root;
 }
 
-const std::vector<std::unique_ptr<Type>> &Group::types() const
+const std::vector<ComplexType> &Group::types() const
 {
-    static const std::vector<std::unique_ptr<Type>> empty_types{};
+    static const std::vector<ComplexType> empty_types{};
     if (!m_types)
     {
         return empty_types;

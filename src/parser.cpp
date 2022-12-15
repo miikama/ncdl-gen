@@ -93,7 +93,7 @@ std::optional<NetCDFType> Parser::resolve_type_for_name(const std::string_view t
         const Group *group = *it;
         for (auto &type : group->types())
         {
-            if (type->name() == type_name)
+            if (type.name() == type_name)
             {
                 return UserType{std::string(type_name)};
             }
