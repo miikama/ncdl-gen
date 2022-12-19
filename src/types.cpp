@@ -19,9 +19,9 @@ std::string_view NetCDFType::name() const
             {
                 return name_for_type(arg);
             }
-            else if constexpr (std::is_same_v<T, UserType>)
+            else if constexpr (std::is_same_v<T, ComplexType>)
             {
-                return arg.name;
+                return arg.name();
             }
             else
             {
@@ -378,10 +378,7 @@ std::optional<Attribute> Attribute::parse(Parser &parser, std::optional<NetCDFTy
         return {};
     }
     // Global attribute
-    if (split_str.first.empty())
-    {
-        fmt::print("Thinking attribute {} is global and it has type {}.\n", split_str.second, attribute_type->name());
-    }
+    bool is_global  { split_str.first.empty() };
 
     Attribute attr{};
     attr.m_variable_name = split_str.first;
@@ -421,6 +418,10 @@ std::optional<Attribute> Attribute::parse(Parser &parser, std::optional<NetCDFTy
             return {};
         }
         attr.m_value = ValidRangeValue{*start, *end};
+    }
+    else if (is_global)
+    {
+        fmt::print("Parsing global attribute {} with type {} failed.\n", split_str.second, attribute_type->name());
     }
     else
     {

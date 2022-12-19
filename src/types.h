@@ -14,13 +14,7 @@
 namespace ncdlgen
 {
 
-/**
- * This type business needs rethinking at some point
- */
-struct UserType
-{
-    std::string name{};
-};
+struct ComplexType;
 
 enum class NetCDFElementaryType
 {
@@ -39,16 +33,6 @@ enum class NetCDFElementaryType
     Double,
     String,
     Default,
-};
-
-struct NetCDFType
-{
-    constexpr NetCDFType(const NetCDFElementaryType &type) : type(type) {}
-    constexpr NetCDFType(const UserType &type) : type(type) {}
-
-    std::variant<NetCDFElementaryType, UserType> type;
-
-    std::string_view name() const;
 };
 
 // Forward declaration
@@ -136,6 +120,17 @@ struct ComplexType
 
     std::variant<OpaqueType, EnumType, VLenType> type;
 };
+
+struct NetCDFType
+{
+    constexpr NetCDFType(const NetCDFElementaryType &type) : type(type) {}
+    constexpr NetCDFType(const ComplexType& type) : type(type) {}
+
+    std::variant<NetCDFElementaryType, ComplexType> type;
+
+    std::string_view name() const;
+};
+
 
 struct Types
 {
