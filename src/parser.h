@@ -27,7 +27,8 @@ class Parser
     std::optional<const Token> pop_specific(const std::vector<std::string> &possible_tokens);
     std::optional<NetCDFType> peek_type();
 
-    std::optional<Number> parse_number(NetCDFType);
+    std::optional<Number> parse_number(const NetCDFType&);
+    std::optional<Array> parse_complex_type_data(const ComplexType&);
 
     void push_group_stack(Group &group) { group_stack.push_back(&group); }
     void pop_group_stack() { group_stack.pop_back(); }

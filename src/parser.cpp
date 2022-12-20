@@ -7,6 +7,9 @@
 namespace ncdlgen
 {
 
+// helper constant for the static asserts in template
+template<class> inline constexpr bool always_false_v = false;
+
 std::optional<RootGroup> Parser::parse()
 {
 
@@ -103,7 +106,7 @@ std::optional<NetCDFType> Parser::resolve_type_for_name(const std::string_view t
     return {};
 }
 
-std::optional<Number> Parser::parse_number(NetCDFType type)
+std::optional<Number> Parser::parse_number(const NetCDFType &type)
 {
     auto number_token = pop();
     if (!number_token)
@@ -202,6 +205,59 @@ std::optional<Number> Parser::parse_number(NetCDFType type)
         fmt::print("Could not parse string '{}' as NetCDF type '{}'.\n", number_string, name_for_type(basic_type));
         return {};
     }
+}
+
+std::optional<Array> Parser::parse_complex_type_data(const ComplexType &type)
+{
+    return std::visit(
+        [this](auto &&arg) -> std::optional<Array> {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr (std::is_same_v<T, OpaqueType>)
+            {
+                fmt::print("TODO: parsing OpaqueType unsupported!\n");
+                return {};
+            }
+            else if constexpr (std::is_same_v<T, EnumType>)
+            {
+                fmt::print("TODO: parsing EnumType unsupported!\n");
+                return {};
+            }
+            else if constexpr (std::is_same_v<T, VLenType>)
+            {
+                // Parsing {17, 18, 19}
+                auto start_bracket = pop_specific({"{"});
+                if (!start_bracket)
+                {
+                    fmt::print("Did not find start bracket when parsing type {}\n", arg.name);
+                    return {};
+                }
+                Array array{};
+                while (auto entry = parse_number(arg.type))
+                {
+                    array.data.push_back(*entry);
+                    if (auto found_comma = peek_specific({","}))
+                    {
+                        pop();
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                auto end_bracket = pop_specific({"}"});
+                if (!end_bracket)
+                {
+                    fmt::print("Did not find end bracket when parsing type {}", arg.name);
+                    return {};
+                }
+                return array;
+            }
+            else
+            {
+                static_assert(always_false_v<T>, "Visiting unsupported type!");
+            }
+        },
+        type.type);
 }
 
 } // namespace ncdlgen
