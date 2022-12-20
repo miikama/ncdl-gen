@@ -36,6 +36,22 @@ std::string Number::as_string() const
     return std::visit([](auto &&arg) -> std::string { return fmt::format("{}", arg); }, value);
 }
 
+std::string Array::as_string() const
+{
+    if (data.empty())
+    {
+        return "[ ]";
+    }
+    std::string desc{"["};
+    desc += data.front().as_string();
+    for (size_t i = 1; i < data.size(); i++)
+    {
+        desc += ", " + data.at(i).as_string();
+    }
+    desc += "]";
+    return desc;
+}
+
 std::string OpaqueType::as_string() const { return fmt::format("OpaqueType opaque({}) {}", length, name); }
 std::string EnumType::as_string() const
 {

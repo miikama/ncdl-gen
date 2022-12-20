@@ -15,6 +15,7 @@ namespace ncdlgen
 {
 
 struct ComplexType;
+struct NetCDFType;
 
 enum class NetCDFElementaryType
 {
@@ -50,6 +51,15 @@ struct Number
 
     std::variant<int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t, uint64_t, float, double> value{};
     NetCDFElementaryType netcdf_type{NetCDFElementaryType::Default};
+};
+
+struct Array
+{
+    Array() {}
+
+    std::string as_string() const;
+
+    std::vector<Number> data;
 };
 
 class Element
