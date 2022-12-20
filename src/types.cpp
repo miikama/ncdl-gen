@@ -329,7 +329,11 @@ std::string Attribute::as_string() const
             }
             else if constexpr (std::is_same_v<T, FillValueAttributeValue>)
             {
-                return fmt::format("{}", arg.as_string());
+                return arg.as_string();
+            }
+            else if constexpr (std::is_same_v<T, VariableData>)
+            {
+                return arg.as_string();
             }
             else
             {
@@ -394,7 +398,7 @@ std::optional<Attribute> Attribute::parse(Parser &parser, std::optional<NetCDFTy
         return {};
     }
     // Global attribute
-    bool is_global  { split_str.first.empty() };
+    bool is_global{split_str.first.empty()};
 
     Attribute attr{};
     attr.m_variable_name = split_str.first;
@@ -437,7 +441,13 @@ std::optional<Attribute> Attribute::parse(Parser &parser, std::optional<NetCDFTy
     }
     else if (is_global)
     {
-        fmt::print("Parsing global attribute {} with type {} failed.\n", split_str.second, attribute_type->name());
+        auto data = VariableData::parse(parser, attr.m_type.value_or(NetCDFElementaryType::Default));
+        if (!data)
+        {
+            fmt::print("Parsing global attribute {} with type {} failed.\n", split_str.second, attribute_type->name());
+            return {};
+        }
+        attr.m_value = *data;
     }
     else
     {
@@ -453,6 +463,32 @@ std::optional<Attribute> Attribute::parse(Parser &parser, std::optional<NetCDFTy
         return {};
     }
     return attr;
+}
+
+std::string VariableData::as_string() const
+{
+    return std::visit([](auto &&arg) { return arg.as_string(); }, data);
+}
+
+std::optional<VariableData> VariableData::parse(Parser &parser, const NetCDFType &type)
+{
+    return std::visit(
+        [&parser](auto &&arg) -> std::optional<VariableData> {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr (std::is_same_v<T, NetCDFElementaryType>)
+            {
+                return parser.parse_number(arg);
+            }
+            else if constexpr (std::is_same_v<T, ComplexType>)
+            {
+                return parser.parse_complex_type_data(arg);
+            }
+            else
+            {
+                static_assert(always_false_v<T>, "Visiting unsupported type!");
+            }
+        },
+        type.type);
 }
 
 std::optional<VariableDeclaration::VariableDeclarationType>

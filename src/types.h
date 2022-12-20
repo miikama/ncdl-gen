@@ -62,6 +62,18 @@ struct Array
     std::vector<Number> data;
 };
 
+struct VariableData
+{
+    static std::optional<VariableData> parse(Parser&, const NetCDFType& type);
+
+    VariableData(const Number& number) : data(number) {}
+    VariableData(const Array& array) : data(array) {}
+
+    std::string as_string() const;
+
+    std::variant<Number, Array> data;
+};
+
 class Element
 {
 
@@ -196,7 +208,7 @@ class Attribute : public Element
     // Either this is a variant of all different attribute value types
     // or this is handled via inheritance and this is a unique_ptr
     // to AttributeValue
-    std::variant<std::string, ValidRangeValue, FillValueAttributeValue> m_value{};
+    std::variant<std::string, ValidRangeValue, FillValueAttributeValue, VariableData> m_value{};
 };
 
 class VariableDimension : public Element
