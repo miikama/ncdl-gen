@@ -258,32 +258,6 @@ class Variables : public Element
 class Group : public Element
 {
   public:
-    /**
-     * Group contains types which have unique_ptrs. Therefore, the
-     * groups cannot be trivially copied aroud and must be moved.
-     *
-     * See also reason for noexcept
-     * https://stackoverflow.com/questions/64758775/result-type-must-be-constructible-from-value-type-of-input-range-when-trying-t
-     */
-    Group() = default;
-    Group(Group &&group) noexcept
-    {
-        m_name = std::move(group.m_name);
-        m_types = std::move(group.m_types);
-        m_dimensions = std::move(group.m_dimensions);
-        m_groups = std::move(group.m_groups);
-        m_variables = std::move(group.m_variables);
-    }
-    Group &operator=(Group &&group) noexcept
-    {
-        m_name = std::move(group.m_name);
-        m_types = std::move(group.m_types);
-        m_dimensions = std::move(group.m_dimensions);
-        m_groups = std::move(group.m_groups);
-        m_variables = std::move(group.m_variables);
-        return *this;
-    }
-
     std::string description(int indent) const override;
 
     static std::optional<Group> parse(Parser &);
