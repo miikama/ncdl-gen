@@ -227,6 +227,25 @@ std::optional<Number> Parser::parse_number(const NetCDFType &type)
     }
 }
 
+std::optional<Array> Parser::parse_array(const NetCDFElementaryType &type)
+{
+    // Parsing 17, 18, 19
+    Array array{};
+    while (auto entry = parse_number(type))
+    {
+        array.data.push_back(*entry);
+        if (auto found_comma = peek_specific({","}))
+        {
+            pop();
+        }
+        else
+        {
+            break;
+        }
+    }
+    return array;
+}
+
 std::optional<Array> Parser::parse_complex_type_data(const ComplexType &type)
 {
     return std::visit(
@@ -271,6 +290,10 @@ std::optional<Array> Parser::parse_complex_type_data(const ComplexType &type)
                     return {};
                 }
                 return array;
+            }
+            else if constexpr (std::is_same_v<T, ArrayType>)
+            {
+                return parse_array(arg.type);
             }
             else
             {
