@@ -106,6 +106,26 @@ std::optional<NetCDFType> Parser::resolve_type_for_name(const std::string_view t
     return {};
 }
 
+Variable* Parser::resolve_variable_for_name(const std::string_view var_name)
+{
+    if (group_stack.empty())
+    {
+        return nullptr;
+    }
+
+    // We only search for variables in the current group
+    auto& current_group = *group_stack.back();
+
+    for(auto& variable : current_group.variables())
+    {
+        if ( variable.name() == var_name)
+        {
+            return &variable;
+        }
+    }
+    return nullptr;
+}
+
 std::optional<Number> Parser::parse_number(const NetCDFType &type)
 {
     auto number_token = pop();

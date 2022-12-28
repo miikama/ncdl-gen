@@ -751,12 +751,23 @@ std::optional<RootGroup> RootGroup::parse(Parser &parser)
 
 const std::vector<ComplexType> &Group::types() const
 {
-    static const std::vector<ComplexType> empty_types{};
+    static std::vector<ComplexType> empty_types{};
     if (!m_types)
     {
         return empty_types;
     }
     return m_types->types;
+}
+
+std::vector<Variable>& Group::variables()
+{
+    static std::vector<Variable> variables{};
+    if(!m_variables)
+    {
+        return variables;
+    }
+    return m_variables->variables();
+    
 }
 
 } // namespace ncdlgen

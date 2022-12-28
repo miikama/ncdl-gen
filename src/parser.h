@@ -33,6 +33,8 @@ class Parser
     void push_group_stack(Group &group) { group_stack.push_back(&group); }
     void pop_group_stack() { group_stack.pop_back(); }
 
+    Variable* resolve_variable_for_name(const std::string_view var_name);
+
   private:
     /**
      * During parsing, resolve typenames to types. Typically

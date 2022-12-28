@@ -14,6 +14,9 @@
 namespace ncdlgen
 {
 
+// Forward declaration
+class Parser;
+class Group;
 struct ComplexType;
 struct NetCDFType;
 
@@ -250,6 +253,8 @@ class Variables : public Element
 
     static std::optional<Variables> parse(Parser &);
 
+    std::vector<Variable>& variables() { return m_variables; }
+    
   private:
     std::vector<Variable> m_variables{};
     std::vector<Attribute> m_attributes{};
@@ -263,6 +268,7 @@ class Group : public Element
     static std::optional<Group> parse(Parser &);
 
     const std::vector<ComplexType> &types() const;
+    std::vector<Variable> &variables();
 
   private:
     std::optional<Types> m_types{};
