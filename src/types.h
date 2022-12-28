@@ -39,8 +39,28 @@ enum class NetCDFElementaryType
     Default,
 };
 
-// Forward declaration
-class Parser;
+using DimensionLength = size_t;
+
+struct Dimension
+{
+    std::string description(int indent) const;
+
+    static std::optional<Dimension> parse(Parser &);
+
+    DimensionLength length{};
+    std::string name {};
+};
+
+struct Dimensions
+{
+  public:
+    std::string description(int indent) const;
+    std::string as_string() const;
+
+    static std::optional<Dimensions> parse(Parser &);
+
+    std::vector<Dimension> dimensions{};
+};
 
 struct Number
 {
@@ -91,7 +111,6 @@ class Element
   protected:
     std::string m_name{};
 };
-using DimensionLength = size_t;
 
 struct OpaqueType
 {
@@ -132,18 +151,28 @@ struct VLenType
     std::string name{};
 };
 
+struct ArrayType
+{
+    std::string as_string() const;
+
+    NetCDFElementaryType type{NetCDFElementaryType::Default};
+    std::string name{};
+    Dimensions dimensions {};
+};
+
 struct ComplexType
 {
     explicit ComplexType(OpaqueType type) : type(type) {}
     explicit ComplexType(VLenType type) : type(type) {}
     explicit ComplexType(EnumType type) : type(type) {}
+    explicit ComplexType(ArrayType type) : type(type) {}
 
     std::string description() const;
     std::string name() const;
 
     static std::optional<ComplexType> parse(Parser &);
 
-    std::variant<OpaqueType, EnumType, VLenType> type;
+    std::variant<OpaqueType, EnumType, VLenType, ArrayType> type;
 };
 
 struct NetCDFType
@@ -156,34 +185,11 @@ struct NetCDFType
     std::string_view name() const;
 };
 
-
 struct Types
 {
     std::string description(int indent) const;
     static std::optional<Types> parse(Parser &);
     std::vector<ComplexType> types{};
-};
-
-class Dimension : public Element
-{
-  public:
-    std::string description(int indent) const override;
-
-    static std::optional<Dimension> parse(Parser &);
-
-  private:
-    DimensionLength m_length{};
-};
-
-class Dimensions : public Element
-{
-  public:
-    std::string description(int indent) const override;
-
-    static std::optional<Dimensions> parse(Parser &);
-
-  private:
-    std::vector<Dimension> m_dimensions{};
 };
 
 struct ValidRangeValue
@@ -229,10 +235,11 @@ class Variable : public Element
 
     static std::optional<Variable> parse(Parser &, NetCDFType existing_type);
 
-    const NetCDFType type() const { return m_type; }
+    NetCDFType type() const { return m_type; }
+    NetCDFElementaryType basic_type() const;
 
   private:
-    double m_value{};
+    std::optional<VariableData> m_value;
     NetCDFType m_type{NetCDFElementaryType::Default};
     std::vector<VariableDimension> m_dimensions{};
 };
@@ -258,6 +265,11 @@ class Variables : public Element
   private:
     std::vector<Variable> m_variables{};
     std::vector<Attribute> m_attributes{};
+};
+
+struct VariableSection
+{
+    static void parse(Parser &parser, Group &group);
 };
 
 class Group : public Element

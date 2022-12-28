@@ -64,6 +64,11 @@ std::string EnumType::as_string() const
 }
 std::string VLenType::as_string() const { return fmt::format("VLenType {} (*)", name_for_type(type)); }
 
+std::string ArrayType::as_string() const
+{
+    return fmt::format("{} {} {}", name_for_type(type), name, dimensions.as_string());
+}
+
 std::string ComplexType::description() const
 {
     return std::visit([](auto &&arg) -> std::string { return arg.as_string(); }, type);
@@ -92,23 +97,33 @@ std::string Dimensions::description(int indent) const
 {
     Description description(indent);
     description << "Dimensions";
-    for (auto &dimension : m_dimensions)
+    for (auto &dimension : dimensions)
     {
         description << dimension.description(indent + 1);
     }
     return description.description;
 }
 
+std::string Dimensions::as_string() const
+{
+    std::string description{"( "};
+    for (auto &dimension : dimensions)
+    {
+        description += fmt::format("{} ", dimension.length);
+    }
+    return fmt::format("{})", description);
+}
+
 std::string Dimension::description(int indent) const
 {
     Description description(indent, false);
-    if (m_length == 0)
+    if (length == 0)
     {
-        description << fmt::format("{} = unlimited", m_name);
+        description << fmt::format("{} = unlimited", name);
     }
     else
     {
-        description << fmt::format("{} = {}", m_name, m_length);
+        description << fmt::format("{} = {}", name, length);
     }
     return description.description;
 }
@@ -146,14 +161,14 @@ std::optional<Dimension> Dimension::parse(Parser &parser)
     }
 
     Dimension dim{};
-    dim.m_name = name->content();
+    dim.name = name->content();
     if (value->content() == "UNLIMITED" || value->content() == "unlimited")
     {
-        dim.m_length = 0;
+        dim.length = 0;
     }
     else
     {
-        dim.m_length = std::stoi(std::string(value->content()));
+        dim.length = std::stoi(std::string(value->content()));
     }
     return dim;
 }
@@ -164,12 +179,11 @@ std::optional<Dimensions> Dimensions::parse(Parser &parser)
     //     lat = 10, lon = 5, time = unlimited ;
 
     Dimensions dimensions{};
-    dimensions.m_name = "dimensions:";
     while (auto dimension = Dimension::parse(parser))
     {
-        dimensions.m_dimensions.push_back(*dimension);
+        dimensions.dimensions.push_back(*dimension);
     }
-    if (dimensions.m_dimensions.empty())
+    if (dimensions.dimensions.empty())
     {
         return {};
     }
@@ -210,6 +224,16 @@ std::string Variable::description(int indent) const
     description.indent = 0;
     description << dim_description;
     return description.description;
+}
+
+NetCDFElementaryType Variable::basic_type() const
+{
+    if (std::holds_alternative<NetCDFElementaryType>(m_type.type))
+    {
+        return std::get<NetCDFElementaryType>(m_type.type);
+    }
+    fmt::print("ERROR: Trying to retreive type from not basic type!\n");
+    return NetCDFElementaryType::Default;
 }
 
 std::optional<Variable> Variable::parse(Parser &parser, NetCDFType existing_type)
@@ -659,6 +683,42 @@ std::optional<Types> Types::parse(Parser &parser)
     return types;
 }
 
+void VariableSection::parse(Parser &parser, Group &group)
+{
+    while (auto next_token = parser.peek())
+    {
+        if (!next_token || is_keyword(next_token->content()))
+        {
+            break;
+        }
+        // TODO skip semicolons
+        auto name = parser.pop();
+        auto *variable = parser.resolve_variable_for_name(name->content());
+        if (!variable)
+        {
+            fmt::print("Could not resolve variable name {} in group {}\n", name->content(), group.name());
+            return;
+        }
+        auto equals = parser.pop_specific({"="});
+        if (!equals)
+        {
+            fmt::print("Could not find equals for variable data for variable {}\n", name->content());
+            return;
+        }
+        auto array = parser.parse_array(variable->basic_type());
+        if (!array)
+        {
+            return;
+        }
+        auto line_end = parser.pop_specific({";"});
+        if (!line_end)
+        {
+            fmt::print("Could not find line end for variable data for variable {}\n", name->content());
+            return;
+        }
+    }
+}
+
 std::string Group::description(int indent) const
 {
     Description description(indent, false);
@@ -710,6 +770,7 @@ std::optional<Group> Group::parse(Parser &parser)
         else if (content->content() == "data:")
         {
             fmt::print("parsing data\n");
+            VariableSection::parse(parser, group);
         }
         else if (content->content() == "variables:")
         {
