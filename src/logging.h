@@ -9,12 +9,9 @@ namespace ncdlgen
 struct Description
 {
 
-    Description(const int indent, bool add_new_line = true)
-        : indent(indent), new_line(add_new_line)
-    {
-    }
+    Description(const int indent, bool add_new_line = true) : indent(indent), new_line(add_new_line) {}
 
-    void operator<<(const std::string &input)
+    void operator<<(const std::string& input)
     {
         std::string line{};
         for (size_t i = 0; i < indent * 2; i++)

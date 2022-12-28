@@ -6,38 +6,40 @@
 
 #include "tokeniser.h"
 
-void print_tokens(const std::vector<std::string> &expected_tokens,
-                  const std::vector<ncdlgen::Token> &tokens,
-                  const std::string &label) {
+void print_tokens(const std::vector<std::string>& expected_tokens, const std::vector<ncdlgen::Token>& tokens,
+                  const std::string& label)
+{
     std::cout << label << "\n";
     for (size_t i = 0; i < tokens.size() || i < expected_tokens.size(); i++)
     {
-        auto received = i < tokens.size() ? tokens[i] .content(): "";
+        auto received = i < tokens.size() ? tokens[i].content() : "";
         auto expected = i < expected_tokens.size() ? expected_tokens[i] : "";
-        std::cout << "expected: " << std::setw(15) <<  expected << "          " << "received: " << std::setw(15) << received << "\n";
+        std::cout << "expected: " << std::setw(15) << expected << "          "
+                  << "received: " << std::setw(15) << received << "\n";
     }
 };
 
-void check_tokeniser(const std::string &input,
-                     const std::vector<std::string> &expected_tokens) {
+void check_tokeniser(const std::string& input, const std::vector<std::string>& expected_tokens)
+{
     ncdlgen::Tokeniser parser{input};
     auto tokens = parser.tokenise();
 
-    if (tokens.size() != expected_tokens.size()) {
+    if (tokens.size() != expected_tokens.size())
+    {
         // print_tokens(expected_tokens,tokens, "expected");
     }
 
-
     ASSERT_EQ(tokens.size(), expected_tokens.size());
 
-    for (size_t i = 0; i < tokens.size(); i++) {
+    for (size_t i = 0; i < tokens.size(); i++)
+    {
         EXPECT_EQ(tokens[i].content(), expected_tokens[i])
-            << "Token " << i << ": " << tokens[i].content() << " is not "
-            << expected_tokens[i] << ".";
+            << "Token " << i << ": " << tokens[i].content() << " is not " << expected_tokens[i] << ".";
     }
 }
 
-TEST(tokeniser, root) {
+TEST(tokeniser, root)
+{
 
     std::string input{"netcdf foo {}"};
     std::vector<std::string> expected_tokens{
@@ -50,9 +52,10 @@ TEST(tokeniser, root) {
     check_tokeniser(input, expected_tokens);
 }
 
-TEST(tokeniser, types) {
+TEST(tokeniser, types)
+{
 
-    const char *cdl = ""
+    const char* cdl = ""
                       "netcdf foo {  // an example netCDF specification in CDL\n"
                       "     types:\n"
                       "         ubyte enum enum_t {Clear = 0, Stratus = 2};\n"
@@ -62,50 +65,77 @@ TEST(tokeniser, types) {
 
     std::string input{cdl};
     std::vector<std::string> expected_tokens{
-        "netcdf",
-        "foo",
-        "{",
-        "types:",
-        "ubyte",
-        "enum",
-        "enum_t",
-        "{",
-        "Clear",
-        "=",
-        "0",
-        ",",
-        "Stratus",
-        "=",
-        "2",
-        "}",
-        ";",
-        "opaque",
-        "(",
-        "11",
-        ")",
-        "opaque_t",
-        ";",
-        "int",
-        "(",
-        "*",
-        ")",
-        "vlen_t",
-        ";",
-        "}",
+        "netcdf", "foo",      "{",       "types:", "ubyte", "enum", "enum_t", "{",      "Clear", "=",
+        "0",      ",",        "Stratus", "=",      "2",     "}",    ";",      "opaque", "(",     "11",
+        ")",      "opaque_t", ";",       "int",    "(",     "*",    ")",      "vlen_t", ";",     "}",
 
     };
 
     check_tokeniser(input, expected_tokens);
 }
 
-TEST(tokeniser, dimensions) {
+TEST(tokeniser, dimensions)
+{
 
-    const char *cdl = ""
-                    "netcdf foo {  // an example netCDF specification in CDL\n"
-                    "dimensions:\n"
-                    "   lat = 10, lon = 5, time = unlimited ;\n"
-                    "   dim2 = 2 ;\n"
-                    "   dim3 = UNLIMITED ;"
+    const char* cdl = ""
+                      "netcdf foo {  // an example netCDF specification in CDL\n"
+                      "dimensions:\n"
+                      "   lat = 10, lon = 5, time = unlimited ;\n"
+                      "   dim2 = 2 ;\n"
+                      "   dim3 = UNLIMITED ;"
+                      "}";
+
+    std::string input{cdl};
+    std::vector<std::string> expected_tokens{
+        "netcdf", "foo",       "{", "dimensions:", "lat", "=", "10", ",",    "lon", "=",         "5", ",", "time",
+        "=",      "unlimited", ";", "dim2",        "=",   "2", ";",  "dim3", "=",   "UNLIMITED", ";", "}",
+
+    };
+
+    check_tokeniser(input, expected_tokens);
+}
+
+TEST(tokeniser, variables)
+{
+
+    const char* cdl = ""
+                      "netcdf foo {  // an example netCDF specification in CDL\n"
+                      "variables:\n"
+                      "long    lat(lat), lon(lon), time(time);\n"
+                      "float   Z(time,lat,lon),t(time,lat,lon);\n"
+                      "double  p(time,lat,lon);\n"
+                      "ubyte   tag;\n"
+                      "}";
+
+    std::string input{cdl};
+    std::vector<std::string> expected_tokens{
+        "netcdf", "foo",  "{",   "variables:", "long", "lat",   "(",      "lat", ")", ",",     "lon",
+        "(",      "lon",  ")",   ",",          "time", "(",     "time",   ")",   ";", "float", "Z",
+        "(",      "time", ",",   "lat",        ",",    "lon",   ")",      ",",   "t", "(",     "time",
+        ",",      "lat",  ",",   "lon",        ")",    ";",     "double", "p",   "(", "time",  ",",
+        "lat",    ",",    "lon", ")",          ";",    "ubyte", "tag",    ";",   "}",
+
+    };
+
+    check_tokeniser(input, expected_tokens);
+}
+
+TEST(tokeniser, attributes)
+{
+
+    const char* cdl = ""
+                      "netcdf foo {  // an example netCDF specification in CDL\n"
+                      "variables:\n"
+                      "// variable attributes\n"
+                      "lat:long_name = \"latitude\";\n"
+                      "lat:units = \"degrees_north\";\n"
+                      "time:units = \"seconds since 1992-1-1 00:00:00\";\n"
+                      "// typed variable attributes\n"
+                      "string Z:units = \"geopotential meters\";\n"
+                      "float Z:valid_range = 0., 5000.;\n"
+                      "double p:_FillValue = -9999.;\n"
+                      "long rh:_FillValue = -1;\n"
+                      "vlen_t :globalatt = {17, 18, 19};\n"
                       "}";
 
     std::string input{cdl};
@@ -113,55 +143,52 @@ TEST(tokeniser, dimensions) {
         "netcdf",
         "foo",
         "{",
-        "dimensions:",
-        "lat",
+        "variables:",
+        "lat:long_name",
         "=",
-        "10",
+        "\"latitude\"",
+        ";",
+        "lat:units",
+        "=",
+        "\"degrees_north\"",
+        ";",
+        "time:units",
+        "=",
+        "\"seconds since 1992-1-1 00:00:00\"",
+        ";",
+        "string",
+        "Z:units",
+        "=",
+        "\"geopotential meters\"",
+        ";",
+        "float",
+        "Z:valid_range",
+        "=",
+        "0.",
         ",",
-        "lon",
-        "=",
-        "5",
-        ",",
-        "time",
-        "=",
-        "unlimited",
+        "5000.",
         ";",
-        "dim2",
+        "double",
+        "p:_FillValue",
         "=",
-        "2",
+        "-9999.",
         ";",
-        "dim3",
+        "long",
+        "rh:_FillValue",
         "=",
-        "UNLIMITED",
+        "-1",
         ";",
-        "}",
-
-    };
-
-    check_tokeniser(input, expected_tokens);
-}
-
-TEST(tokeniser, variables) {
-
-    const char *cdl = ""
-              "netcdf foo {  // an example netCDF specification in CDL\n"
-              "variables:\n"
-                "long    lat(lat), lon(lon), time(time);\n" 
-                "float   Z(time,lat,lon),t(time,lat,lon);\n" 
-                "double  p(time,lat,lon);\n" 
-                "ubyte   tag;\n" 
-                "}";
-
-    std::string input{cdl};
-    std::vector<std::string> expected_tokens{
-        "netcdf",
-        "foo",
+        "vlen_t",
+        ":globalatt",
+        "=",
         "{",
-        "variables:",
-        "long", "lat", "(", "lat", ")", ",", "lon", "(", "lon", ")", ",", "time", "(", "time", ")", ";",
-        "float", "Z", "(", "time", ",", "lat", ",", "lon", ")", ",", "t", "(", "time", ",", "lat", ",", "lon", ")", ";",
-        "double", "p", "(", "time", ",", "lat", ",", "lon", ")", ";",
-        "ubyte", "tag", ";", 
+        "17",
+        ",",
+        "18",
+        ",",
+        "19",
+        "}",
+        ";",
         "}",
 
     };
@@ -169,93 +196,59 @@ TEST(tokeniser, variables) {
     check_tokeniser(input, expected_tokens);
 }
 
-TEST(tokeniser, attributes) {
+TEST(tokeniser, data)
+{
 
-    const char *cdl = ""
-              "netcdf foo {  // an example netCDF specification in CDL\n"
-              "variables:\n"
-               "// variable attributes\n"
-               "lat:long_name = \"latitude\";\n"
-               "lat:units = \"degrees_north\";\n"
-               "time:units = \"seconds since 1992-1-1 00:00:00\";\n"
-               "// typed variable attributes\n"
-               "string Z:units = \"geopotential meters\";\n"
-               "float Z:valid_range = 0., 5000.;\n"
-               "double p:_FillValue = -9999.;\n"
-               "long rh:_FillValue = -1;\n"
-               "vlen_t :globalatt = {17, 18, 19};\n"
-                "}";
+    const char* cdl = ""
+                      "netcdf foo {  // an example netCDF specification in CDL\n"
+                      "data:\n"
+                      "    lat   = 0, 10, 60, 90;\n"
+                      "    lon   = -140, -118;\n"
+                      "}";
 
     std::string input{cdl};
     std::vector<std::string> expected_tokens{
-        "netcdf", "foo", "{",
-        "variables:",
-        "lat:long_name", "=",  "\"latitude\"", ";",
-        "lat:units", "=",  "\"degrees_north\"", ";",
-        "time:units", "=", "\"seconds since 1992-1-1 00:00:00\"", ";",
-        "string", "Z:units", "=", "\"geopotential meters\"", ";",
-        "float", "Z:valid_range", "=", "0.", ",", "5000.", ";",
-        "double", "p:_FillValue", "=", "-9999.", ";",
-        "long", "rh:_FillValue", "=", "-1", ";",
-        "vlen_t", ":globalatt", "=", "{", "17", ",", "18", ",", "19", "}", ";",
-        "}",
+        "netcdf", "foo", "{", "data:", "lat", "=",    "0", ",",    "10", ",", "60",
+        ",",      "90",  ";", "lon",   "=",   "-140", ",", "-118", ";",  "}",
 
     };
 
     check_tokeniser(input, expected_tokens);
 }
 
-TEST(tokeniser, data) {
+TEST(tokeniser, groups)
+{
 
-    const char *cdl = ""
-              "netcdf foo {  // an example netCDF specification in CDL\n"
-              "data:\n"
-              "    lat   = 0, 10, 60, 90;\n"
-              "    lon   = -140, -118;\n"
-              "}";
-
-    std::string input{cdl};
-    std::vector<std::string> expected_tokens{
-        "netcdf", "foo", "{",
-        "data:",
-        "lat", "=", "0", ",", "10", ",", "60", ",", "90", ";",
-        "lon", "=", "-140", ",", "-118", ";",
-        "}",
-
-    };
-
-    check_tokeniser(input, expected_tokens);
-}
-
-TEST(tokeniser, groups) {
-
-    const char *cdl = ""
-              "netcdf foo {  // an example netCDF specification in CDL\n"
-              "group: g {\n"
-              "types:\n"
-              "    compound cmpd_t { vlen_t f1; enum_t f2;};\n"
-              "} // group g\n"
-              "group: h {\n"
-              "variables:\n"
-              "    /g/cmpd_t  compoundvar;\n"
-              " data:\n"
-              "    compoundvar = { {3,4,5}, enum_t.Stratus } ;\n"
-              "} // group h\n"
-              "}";
+    const char* cdl = ""
+                      "netcdf foo {  // an example netCDF specification in CDL\n"
+                      "group: g {\n"
+                      "types:\n"
+                      "    compound cmpd_t { vlen_t f1; enum_t f2;};\n"
+                      "} // group g\n"
+                      "group: h {\n"
+                      "variables:\n"
+                      "    /g/cmpd_t  compoundvar;\n"
+                      " data:\n"
+                      "    compoundvar = { {3,4,5}, enum_t.Stratus } ;\n"
+                      "} // group h\n"
+                      "}";
 
     std::string input{cdl};
     std::vector<std::string> expected_tokens{
-        "netcdf", "foo", "{",
-        "group:",  "g",  "{",
-        "types:",
-        "compound", "cmpd_t", "{", "vlen_t", "f1", ";", "enum_t", "f2", ";", "}", ";",
-        "}",
-        "group:", "h", "{",
-        "variables:",
-        "/g/cmpd_t", "compoundvar", ";",
-        "data:",
-        "compoundvar", "=", "{", "{", "3", ",", "4", ",", "5", "}", ",", "enum_t.Stratus", "}", ";",
-        "}",
+        "netcdf",      "foo",        "{",
+        "group:",      "g",          "{",
+        "types:",      "compound",   "cmpd_t",
+        "{",           "vlen_t",     "f1",
+        ";",           "enum_t",     "f2",
+        ";",           "}",          ";",
+        "}",           "group:",     "h",
+        "{",           "variables:", "/g/cmpd_t",
+        "compoundvar", ";",          "data:",
+        "compoundvar", "=",          "{",
+        "{",           "3",          ",",
+        "4",           ",",          "5",
+        "}",           ",",          "enum_t.Stratus",
+        "}",           ";",          "}",
         "}",
 
     };

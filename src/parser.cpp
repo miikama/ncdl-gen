@@ -8,7 +8,7 @@ namespace ncdlgen
 {
 
 // helper constant for the static asserts in template
-template<class> inline constexpr bool always_false_v = false;
+template <class> inline constexpr bool always_false_v = false;
 
 std::optional<RootGroup> Parser::parse()
 {
@@ -36,14 +36,14 @@ std::optional<const Token> Parser::peek()
     return m_tokens[m_cursor];
 }
 
-std::optional<const Token> Parser::peek_specific(const std::vector<std::string> &possible_tokens)
+std::optional<const Token> Parser::peek_specific(const std::vector<std::string>& possible_tokens)
 {
     auto token = peek();
     if (!token)
     {
         return {};
     }
-    for (auto &possible : possible_tokens)
+    for (auto& possible : possible_tokens)
     {
         if (token->content() == possible)
         {
@@ -53,14 +53,14 @@ std::optional<const Token> Parser::peek_specific(const std::vector<std::string> 
     return {};
 }
 
-std::optional<const Token> Parser::pop_specific(const std::vector<std::string> &possible_tokens)
+std::optional<const Token> Parser::pop_specific(const std::vector<std::string>& possible_tokens)
 {
     auto token = pop();
     if (!token)
     {
         return {};
     }
-    for (auto &possible : possible_tokens)
+    for (auto& possible : possible_tokens)
     {
         if (token->content() == possible)
         {
@@ -93,8 +93,8 @@ std::optional<NetCDFType> Parser::resolve_type_for_name(const std::string_view t
     // Possibly complex user defined type
     for (auto it = group_stack.rbegin(); it != group_stack.rend(); ++it)
     {
-        const Group *group = *it;
-        for (auto &type : group->types())
+        const Group* group = *it;
+        for (auto& type : group->types())
         {
             if (type.name() == type_name)
             {
@@ -116,9 +116,9 @@ Variable* Parser::resolve_variable_for_name(const std::string_view var_name)
     // We only search for variables in the current group
     auto& current_group = *group_stack.back();
 
-    for(auto& variable : current_group.variables())
+    for (auto& variable : current_group.variables())
     {
-        if ( variable.name() == var_name)
+        if (variable.name() == var_name)
         {
             return &variable;
         }
@@ -126,7 +126,7 @@ Variable* Parser::resolve_variable_for_name(const std::string_view var_name)
     return nullptr;
 }
 
-std::optional<Number> Parser::parse_number(const NetCDFType &type)
+std::optional<Number> Parser::parse_number(const NetCDFType& type)
 {
     auto number_token = pop();
     if (!number_token)
@@ -140,7 +140,7 @@ std::optional<Number> Parser::parse_number(const NetCDFType &type)
         fmt::print("Parsing number for user defined complex type '{}' is not supported\n", type.name());
         return {};
     }
-    auto &basic_type = std::get<NetCDFElementaryType>(type.type);
+    auto& basic_type = std::get<NetCDFElementaryType>(type.type);
 
     /**
      * Here we delegate the conversions to std::stoT. This is
@@ -227,7 +227,7 @@ std::optional<Number> Parser::parse_number(const NetCDFType &type)
     }
 }
 
-std::optional<Array> Parser::parse_array(const NetCDFElementaryType &type)
+std::optional<Array> Parser::parse_array(const NetCDFElementaryType& type)
 {
     // Parsing 17, 18, 19
     Array array{};
@@ -246,10 +246,10 @@ std::optional<Array> Parser::parse_array(const NetCDFElementaryType &type)
     return array;
 }
 
-std::optional<Array> Parser::parse_complex_type_data(const ComplexType &type)
+std::optional<Array> Parser::parse_complex_type_data(const ComplexType& type)
 {
     return std::visit(
-        [this](auto &&arg) -> std::optional<Array> {
+        [this](auto&& arg) -> std::optional<Array> {
             using T = std::decay_t<decltype(arg)>;
             if constexpr (std::is_same_v<T, OpaqueType>)
             {

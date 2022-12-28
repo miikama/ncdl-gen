@@ -17,7 +17,7 @@ bool is_keyword(const std::string_view word)
     return keywords.find(word) != keywords.end();
 }
 
-std::optional<NetCDFElementaryType> type_for_token(const Token &token)
+std::optional<NetCDFElementaryType> type_for_token(const Token& token)
 {
     if (token.content() == "char")
     {
@@ -81,7 +81,7 @@ std::optional<NetCDFElementaryType> type_for_token(const Token &token)
     }
 }
 
-const std::string_view name_for_type(const NetCDFElementaryType &type)
+const std::string_view name_for_type(const NetCDFElementaryType& type)
 {
     switch (type)
     {

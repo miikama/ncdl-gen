@@ -13,7 +13,7 @@ namespace ncdlgen
 std::string_view NetCDFType::name() const
 {
     return std::visit(
-        [](auto &&arg) -> std::string_view {
+        [](auto&& arg) -> std::string_view {
             using T = std::decay_t<decltype(arg)>;
             if constexpr (std::is_same_v<T, NetCDFElementaryType>)
             {
@@ -33,7 +33,7 @@ std::string_view NetCDFType::name() const
 
 std::string Number::as_string() const
 {
-    return std::visit([](auto &&arg) -> std::string { return fmt::format("{}", arg); }, value);
+    return std::visit([](auto&& arg) -> std::string { return fmt::format("{}", arg); }, value);
 }
 
 std::string Array::as_string() const
@@ -56,7 +56,7 @@ std::string OpaqueType::as_string() const { return fmt::format("OpaqueType opaqu
 std::string EnumType::as_string() const
 {
     std::string type_name = fmt::format("EnumType {} {}: [ ", name, name_for_type(type));
-    for (auto &value : enum_values)
+    for (auto& value : enum_values)
     {
         type_name += fmt::format(" {} = {} ", value.name, value.value);
     }
@@ -71,12 +71,12 @@ std::string ArrayType::as_string() const
 
 std::string ComplexType::description() const
 {
-    return std::visit([](auto &&arg) -> std::string { return arg.as_string(); }, type);
+    return std::visit([](auto&& arg) -> std::string { return arg.as_string(); }, type);
 }
 
 std::string ComplexType::name() const
 {
-    return std::visit([](auto &&arg) -> std::string { return arg.name; }, type);
+    return std::visit([](auto&& arg) -> std::string { return arg.name; }, type);
 }
 
 std::string Types::description(int indent) const
@@ -86,7 +86,7 @@ std::string Types::description(int indent) const
     description.push_indent();
     description.push_indent();
     description.push_indent();
-    for (auto &type : types)
+    for (auto& type : types)
     {
         description << type.description();
     }
@@ -97,7 +97,7 @@ std::string Dimensions::description(int indent) const
 {
     Description description(indent);
     description << "Dimensions";
-    for (auto &dimension : dimensions)
+    for (auto& dimension : dimensions)
     {
         description << dimension.description(indent + 1);
     }
@@ -107,7 +107,7 @@ std::string Dimensions::description(int indent) const
 std::string Dimensions::as_string() const
 {
     std::string description{"( "};
-    for (auto &dimension : dimensions)
+    for (auto& dimension : dimensions)
     {
         description += fmt::format("{} ", dimension.length);
     }
@@ -143,7 +143,7 @@ std::string RootGroup::description(int indent) const
 
 void RootGroup::print_tree() { fmt::print(description(0)); }
 
-std::optional<Dimension> Dimension::parse(Parser &parser)
+std::optional<Dimension> Dimension::parse(Parser& parser)
 {
 
     auto next_token = parser.peek();
@@ -173,7 +173,7 @@ std::optional<Dimension> Dimension::parse(Parser &parser)
     return dim;
 }
 
-std::optional<Dimensions> Dimensions::parse(Parser &parser)
+std::optional<Dimensions> Dimensions::parse(Parser& parser)
 {
     // dimensions:
     //     lat = 10, lon = 5, time = unlimited ;
@@ -192,7 +192,7 @@ std::optional<Dimensions> Dimensions::parse(Parser &parser)
 
 std::string VariableDimension::description(int indent) const { return m_name; }
 
-std::optional<VariableDimension> VariableDimension::parse(Parser &parser)
+std::optional<VariableDimension> VariableDimension::parse(Parser& parser)
 {
     auto dim_name = parser.pop();
     auto comma_or_close_brace = parser.pop_specific({")", ","});
@@ -236,7 +236,7 @@ NetCDFElementaryType Variable::basic_type() const
     return NetCDFElementaryType::Default;
 }
 
-std::optional<Variable> Variable::parse(Parser &parser, NetCDFType existing_type)
+std::optional<Variable> Variable::parse(Parser& parser, NetCDFType existing_type)
 {
     auto name = parser.pop();
     auto line_end_or_open_bracket = parser.pop_specific({"(", ";"});
@@ -282,7 +282,7 @@ std::string Variables::description(int indent) const
 {
     Description description(indent);
     description << "Variables";
-    for (auto &variable : m_variables)
+    for (auto& variable : m_variables)
     {
         description << variable.description(indent + 1);
     }
@@ -295,14 +295,14 @@ std::string Variables::description(int indent) const
     description << "Attributes";
     description.push_indent();
     description.push_indent();
-    for (auto &attribute : m_attributes)
+    for (auto& attribute : m_attributes)
     {
         description << attribute.description(indent);
     }
     return description.description;
 }
 
-std::optional<Variables> Variables::parse(Parser &parser)
+std::optional<Variables> Variables::parse(Parser& parser)
 {
     Variables variables{};
     variables.m_name = "variables:";
@@ -341,7 +341,7 @@ std::string Attribute::as_string() const
 {
     // Use the visitor to go through all types
     return std::visit(
-        [](auto &&arg) -> std::string {
+        [](auto&& arg) -> std::string {
             using T = std::decay_t<decltype(arg)>;
             if constexpr (std::is_same_v<T, std::string>)
             {
@@ -382,7 +382,7 @@ std::string Attribute::description(int indent) const
     return fmt::format("{}{}:{} = {}", type_part, name_part, m_attribute_name, as_string());
 }
 
-std::optional<Attribute> Attribute::parse(Parser &parser, std::optional<NetCDFType> attribute_type)
+std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFType> attribute_type)
 {
     // Allowed attribute grammar,
     // https://manpages.ubuntu.com/manpages/xenial/man1/ncgen.1.html
@@ -491,13 +491,13 @@ std::optional<Attribute> Attribute::parse(Parser &parser, std::optional<NetCDFTy
 
 std::string VariableData::as_string() const
 {
-    return std::visit([](auto &&arg) { return arg.as_string(); }, data);
+    return std::visit([](auto&& arg) { return arg.as_string(); }, data);
 }
 
-std::optional<VariableData> VariableData::parse(Parser &parser, const NetCDFType &type)
+std::optional<VariableData> VariableData::parse(Parser& parser, const NetCDFType& type)
 {
     return std::visit(
-        [&parser](auto &&arg) -> std::optional<VariableData> {
+        [&parser](auto&& arg) -> std::optional<VariableData> {
             using T = std::decay_t<decltype(arg)>;
             if constexpr (std::is_same_v<T, NetCDFElementaryType>)
             {
@@ -516,7 +516,7 @@ std::optional<VariableData> VariableData::parse(Parser &parser, const NetCDFType
 }
 
 std::optional<VariableDeclaration::VariableDeclarationType>
-VariableDeclaration::parse(Parser &parser, std::optional<NetCDFType> existing_type)
+VariableDeclaration::parse(Parser& parser, std::optional<NetCDFType> existing_type)
 {
     auto next_token = parser.peek();
     if (!next_token || is_keyword(next_token->content()))
@@ -572,7 +572,7 @@ VariableDeclaration::parse(Parser &parser, std::optional<NetCDFType> existing_ty
     return Variable::parse(parser, *type);
 }
 
-std::optional<EnumValue> EnumValue::parse(Parser &parser)
+std::optional<EnumValue> EnumValue::parse(Parser& parser)
 {
     auto next_token = parser.peek();
     if (!next_token || is_keyword(next_token->content()))
@@ -598,7 +598,7 @@ std::optional<EnumValue> EnumValue::parse(Parser &parser)
     return enum_value;
 }
 
-std::optional<ComplexType> ComplexType::parse(Parser &parser)
+std::optional<ComplexType> ComplexType::parse(Parser& parser)
 {
 
     auto next_token = parser.peek();
@@ -665,7 +665,7 @@ std::optional<ComplexType> ComplexType::parse(Parser &parser)
     return ComplexType{VLenType(vlen_name->content(), *actual_type)};
 }
 
-std::optional<Types> Types::parse(Parser &parser)
+std::optional<Types> Types::parse(Parser& parser)
 {
     // types:
     //     ubyte enum enum_t {Clear = 0, Cumulonimbus = 1, Stratus = 2};
@@ -683,7 +683,7 @@ std::optional<Types> Types::parse(Parser &parser)
     return types;
 }
 
-void VariableSection::parse(Parser &parser, Group &group)
+void VariableSection::parse(Parser& parser, Group& group)
 {
     while (auto next_token = parser.peek())
     {
@@ -693,7 +693,7 @@ void VariableSection::parse(Parser &parser, Group &group)
         }
         // TODO skip semicolons
         auto name = parser.pop();
-        auto *variable = parser.resolve_variable_for_name(name->content());
+        auto* variable = parser.resolve_variable_for_name(name->content());
         if (!variable)
         {
             fmt::print("Could not resolve variable name {} in group {}\n", name->content(), group.name());
@@ -735,14 +735,14 @@ std::string Group::description(int indent) const
     {
         description << m_variables->description(indent + 1);
     }
-    for (auto &group : m_groups)
+    for (auto& group : m_groups)
     {
         description << group.description(indent + 1);
     }
     return description.description;
 }
 
-std::optional<Group> Group::parse(Parser &parser)
+std::optional<Group> Group::parse(Parser& parser)
 {
 
     auto group_name = parser.pop();
@@ -795,7 +795,7 @@ std::optional<Group> Group::parse(Parser &parser)
     return {};
 }
 
-std::optional<RootGroup> RootGroup::parse(Parser &parser)
+std::optional<RootGroup> RootGroup::parse(Parser& parser)
 {
     auto netcdf = parser.pop();
 
@@ -810,7 +810,7 @@ std::optional<RootGroup> RootGroup::parse(Parser &parser)
     return root;
 }
 
-const std::vector<ComplexType> &Group::types() const
+const std::vector<ComplexType>& Group::types() const
 {
     static std::vector<ComplexType> empty_types{};
     if (!m_types)
@@ -823,12 +823,11 @@ const std::vector<ComplexType> &Group::types() const
 std::vector<Variable>& Group::variables()
 {
     static std::vector<Variable> variables{};
-    if(!m_variables)
+    if (!m_variables)
     {
         return variables;
     }
     return m_variables->variables();
-    
 }
 
 } // namespace ncdlgen
