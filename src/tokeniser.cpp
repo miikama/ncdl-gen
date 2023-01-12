@@ -29,7 +29,7 @@ std::vector<Token> Tokeniser::tokenise()
         case ';':
         case ',':
             stop_word_leave_char();
-            m_tokens.push_back({m_input.substr(m_cursor, 1)});
+            m_tokens.push_back({m_input.substr(m_cursor, 1), source_location()});
             pop();
             m_word_start = m_cursor;
             continue;
@@ -101,8 +101,7 @@ void Tokeniser::stop_word()
 {
     if (m_cursor > m_word_start)
     {
-        m_tokens.push_back(
-            {m_input.substr(m_word_start, m_cursor - m_word_start)});
+        m_tokens.push_back({m_input.substr(m_word_start, m_cursor - m_word_start), source_location()});
     }
     pop();
     m_word_start = m_cursor;
@@ -112,8 +111,7 @@ void Tokeniser::stop_word_leave_char()
 {
     if (m_cursor > m_word_start)
     {
-        m_tokens.push_back(
-            {m_input.substr(m_word_start, m_cursor - m_word_start)});
+        m_tokens.push_back({m_input.substr(m_word_start, m_cursor - m_word_start), source_location()});
     }
     m_word_start = m_cursor;
 }
@@ -141,6 +139,17 @@ std::optional<char> Tokeniser::pop()
     if (m_cursor >= m_input.size())
     {
         return {};
+    }
+    // Create a token to original input file line/column mapping
+    auto character = m_input[m_cursor];
+    if (character == '\n')
+    {
+        m_line++;
+        m_column = 0;
+    }
+    else
+    {
+        m_column++;
     }
     return m_input[m_cursor++];
 }

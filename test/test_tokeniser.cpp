@@ -3,6 +3,7 @@
 #include <string>
 
 #include <gtest/gtest.h>
+#include <fmt/core.h>
 
 #include "tokeniser.h"
 
@@ -254,4 +255,35 @@ TEST(tokeniser, groups)
     };
 
     check_tokeniser(input, expected_tokens);
+}
+
+
+TEST(tokeniser, source_locations)
+{
+
+    const char* cdl = "\n"
+                      "netcdf foo {  // an example netCDF specification in CDL\n"
+                      "data:\n"
+                      "    lat   = 0, 10, 60, 90;\n"
+                      "    lon   = -140, -118;\n"
+                      "}";
+
+    std::string input{cdl};
+
+    ncdlgen::Tokeniser parser{input};
+    auto tokens = parser.tokenise();
+
+    ASSERT_GT(tokens.size(), 10);
+    EXPECT_EQ(tokens[0].content(), "netcdf");
+    // line numbers are 0-based, first word on 2nd line
+    EXPECT_EQ(tokens[0].source_location.line, 1);
+    // column numbers are zero based and at the end of the token
+    EXPECT_EQ(tokens[0].source_location.column, 6);
+
+    EXPECT_EQ(tokens[4].content(), "lat");
+    // lat is on 4th line
+    EXPECT_EQ(tokens[4].source_location.line, 3);
+    // column numbers also include the whitespace
+    EXPECT_EQ(tokens[4].source_location.column, 7);
+
 }

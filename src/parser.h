@@ -36,6 +36,8 @@ class Parser
 
     Variable* resolve_variable_for_name(const std::string_view var_name);
 
+    void log_parse_error(const std::string& message);
+
   private:
     /**
      * During parsing, resolve typenames to types. Typically
@@ -43,6 +45,8 @@ class Parser
      * types, resolve typename to the actual type
      */
     std::optional<NetCDFType> resolve_type_for_name(const std::string_view type_name);
+
+    SourceLocation current_cursor_location() const;
 
     size_t m_cursor{};
     const std::vector<Token>& m_tokens;

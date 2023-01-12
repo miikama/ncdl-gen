@@ -81,6 +81,22 @@ std::optional<NetCDFType> Parser::peek_type()
     return resolve_type_for_name(token->content());
 }
 
+SourceLocation Parser::current_cursor_location() const
+{
+    if (m_cursor >= m_tokens.size())
+    {
+        return {0, 0};
+    }
+    return m_tokens[m_cursor].source_location;
+}
+
+void Parser::log_parse_error(const std::string& message)
+{
+    auto cursor_location = current_cursor_location();
+    fmt::print("Parser Error at line {} and column {}:\n    {}\n", cursor_location.line + 1,
+               cursor_location.column + 1, message);
+}
+
 std::optional<NetCDFType> Parser::resolve_type_for_name(const std::string_view type_name)
 {
     // Basic type

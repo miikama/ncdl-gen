@@ -9,17 +9,24 @@
 namespace ncdlgen
 {
 
+struct SourceLocation
+{
+    size_t line{};
+    size_t column{};
+};
+
 struct Token
 {
-    const std::string_view &content() const { return m_content; }
-    std::string_view m_content;
+    const std::string_view& content() const { return m_content; }
+    std::string_view m_content{};
+    SourceLocation source_location{};
 };
 
 class Tokeniser
 {
 
   public:
-    Tokeniser(const std::string &input) : m_input(input) {}
+    Tokeniser(const std::string& input) : m_input(input) {}
 
     std::vector<Token> tokenise();
 
@@ -40,6 +47,11 @@ class Tokeniser
 
     size_t m_cursor{};
     size_t m_word_start{};
+
+    SourceLocation source_location() { return {m_line, m_column}; }
+
+    size_t m_line{};
+    size_t m_column{};
 };
 
 } // namespace ncdlgen
