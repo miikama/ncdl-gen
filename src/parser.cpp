@@ -222,7 +222,8 @@ std::optional<Number> Parser::parse_number(const NetCDFType& type)
     }
     catch (std::invalid_argument)
     {
-        fmt::print("Could not parse string '{}' as NetCDF type '{}'.\n", number_string, name_for_type(basic_type));
+        fmt::print("Could not parse string '{}' as NetCDF type '{}'.\n", number_string,
+                   name_for_type(basic_type));
         return {};
     }
 }

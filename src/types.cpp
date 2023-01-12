@@ -468,7 +468,8 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
         auto data = VariableData::parse(parser, attr.m_type.value_or(NetCDFElementaryType::Default));
         if (!data)
         {
-            fmt::print("Parsing global attribute {} with type {} failed.\n", split_str.second, attribute_type->name());
+            fmt::print("Parsing global attribute {} with type {} failed.\n", split_str.second,
+                       attribute_type->name());
             return {};
         }
         attr.m_value = *data;
@@ -483,7 +484,8 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
 
     if (!line_end)
     {
-        fmt::print("Could not find line end for variable definition for attribute {}\n", attr.m_attribute_name);
+        fmt::print("Could not find line end for variable definition for attribute {}\n",
+                   attr.m_attribute_name);
         return {};
     }
     return attr;
@@ -594,7 +596,8 @@ std::optional<EnumValue> EnumValue::parse(Parser& parser)
         return {};
     }
 
-    EnumValue enum_value{.name = std::string(name->content()), .value = std::stoi(std::string(value->content()))};
+    EnumValue enum_value{.name = std::string(name->content()),
+                         .value = std::stoi(std::string(value->content()))};
     return enum_value;
 }
 
@@ -622,7 +625,8 @@ std::optional<ComplexType> ComplexType::parse(Parser& parser)
         if (!left_brace || !opaque_size || !right_brace || !opaque_name || !line_end)
             return {};
 
-        return ComplexType{OpaqueType(opaque_name->content(), std::stoi(std::string(opaque_size->content())))};
+        return ComplexType{
+            OpaqueType(opaque_name->content(), std::stoi(std::string(opaque_size->content())))};
     }
 
     auto actual_type = type_for_token(*type_name);
