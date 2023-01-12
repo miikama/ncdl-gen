@@ -239,9 +239,15 @@ NetCDFElementaryType Variable::basic_type() const
 std::optional<Variable> Variable::parse(Parser& parser, NetCDFType existing_type)
 {
     auto name = parser.pop();
-    auto line_end_or_open_bracket = parser.pop_specific({"(", ";"});
-    if (!name || !line_end_or_open_bracket)
+    if (!name)
     {
+        parser.log_parse_error("Could not find name for variable");
+        return {};
+    }
+    auto line_end_or_open_bracket = parser.pop_specific({"(", ";"});
+    if (!line_end_or_open_bracket)
+    {
+        parser.log_parse_error(fmt::format("Could not find '(' or ';' for variable {}", name->content()));
         return {};
     }
 
@@ -271,7 +277,8 @@ std::optional<Variable> Variable::parse(Parser& parser, NetCDFType existing_type
 
     if (!line_end)
     {
-        fmt::print("Could not find line end for variable definition for variable {}\n", name->content());
+        parser.log_parse_error(fmt::format(
+            "Could not find line end for variable definition for variable '{}'", name->content()));
         return {};
     }
 
@@ -445,7 +452,7 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
         auto fill_value = parser.parse_number(attr.m_type.value_or(NetCDFElementaryType::Default));
         if (!fill_value)
         {
-            fmt::print("Could not parse value for attribute '_FillValue'\n");
+            parser.log_parse_error("Could not parse value for attribute '_FillValue'");
             return {};
         }
         attr.m_value = *fill_value;
@@ -458,7 +465,7 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
         auto end = parser.parse_number(attr.m_type.value_or(NetCDFElementaryType::Default));
         if (!start || !comma || !end)
         {
-            fmt::print("Could not parse value for attribute 'valid_range'\n");
+            parser.log_parse_error("Could not parse value for attribute 'valid_range'");
             return {};
         }
         attr.m_value = ValidRangeValue{*start, *end};
@@ -612,7 +619,10 @@ std::optional<ComplexType> ComplexType::parse(Parser& parser)
 
     auto type_name = parser.pop();
     if (!type_name)
+    {
+        parser.log_parse_error("Did not find type name when parsing type");
         return {};
+    }
 
     if (type_name->content() == "opaque")
     {
@@ -750,9 +760,14 @@ std::optional<Group> Group::parse(Parser& parser)
 {
 
     auto group_name = parser.pop();
-    auto left_bracket = parser.pop();
-    if (!group_name || !left_bracket)
+    if (!group_name)
     {
+        fmt::print("Could not find group name when parsing group\n");
+    }
+    auto left_bracket = parser.pop_specific({"{"});
+    if (!left_bracket)
+    {
+        fmt::print("Could not find group starting brace when parsing group {}\n", group_name->content());
         return {};
     }
     Group group{};
@@ -763,27 +778,22 @@ std::optional<Group> Group::parse(Parser& parser)
     {
         if (content->content() == "dimensions:")
         {
-            fmt::print("parsing dimensions\n");
             group.m_dimensions = Dimensions::parse(parser);
         }
         else if (content->content() == "types:")
         {
-            fmt::print("parsing types\n");
             group.m_types = Types::parse(parser);
         }
         else if (content->content() == "data:")
         {
-            fmt::print("parsing data\n");
             VariableSection::parse(parser, group);
         }
         else if (content->content() == "variables:")
         {
-            fmt::print("parsing variables\n");
             group.m_variables = Variables::parse(parser);
         }
         else if (content->content() == "group:")
         {
-            fmt::print("parsing group\n");
             if (auto child_group = Group::parse(parser))
             {
                 group.m_groups.push_back(std::move(*child_group));

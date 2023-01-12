@@ -8,8 +8,6 @@
 
 void parse_file(const std::string& filename)
 {
-    std::cout << "Reading input file " << filename << " \n";
-
     std::ifstream istream { filename};
 
     std::stringstream sstream {};
