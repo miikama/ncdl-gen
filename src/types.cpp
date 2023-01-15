@@ -145,9 +145,8 @@ void RootGroup::print_tree() { fmt::print(description(0)); }
 
 std::optional<Dimension> Dimension::parse(Parser& parser)
 {
-
     auto next_token = parser.peek();
-    if (!next_token || is_keyword(next_token->content()))
+    if (!next_token || is_group_end(next_token->content()))
     {
         return {};
     }
@@ -418,14 +417,15 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
     auto equals = parser.pop_specific({"="});
     if (!equals)
     {
-        fmt::print("Could not find '=' for Attribute with parsed name {}\n", name->content());
+        parser.log_parse_error(
+            fmt::format("Could not find '=' for Attribute with parsed name {}", name->content()));
         return {};
     }
 
     auto split_str = split_string_at(name->content(), ':');
     if (split_str.second.empty())
     {
-        fmt::print("Splitting attr name failed for Attribute {}\n", name->content());
+        parser.log_parse_error(fmt::format("Splitting attr name failed for Attribute {}", name->content()));
         return {};
     }
     // Global attribute
@@ -528,7 +528,7 @@ std::optional<VariableDeclaration::VariableDeclarationType>
 VariableDeclaration::parse(Parser& parser, std::optional<NetCDFType> existing_type)
 {
     auto next_token = parser.peek();
-    if (!next_token || is_keyword(next_token->content()))
+    if (!next_token || is_group_end(next_token->content()))
     {
         return {};
     }
@@ -584,7 +584,7 @@ VariableDeclaration::parse(Parser& parser, std::optional<NetCDFType> existing_ty
 std::optional<EnumValue> EnumValue::parse(Parser& parser)
 {
     auto next_token = parser.peek();
-    if (!next_token || is_keyword(next_token->content()))
+    if (!next_token || is_group_end(next_token->content()))
     {
         return {};
     }
@@ -612,7 +612,7 @@ std::optional<ComplexType> ComplexType::parse(Parser& parser)
 {
 
     auto next_token = parser.peek();
-    if (!next_token || is_keyword(next_token->content()))
+    if (!next_token || is_group_end(next_token->content()))
     {
         return {};
     }
@@ -805,6 +805,11 @@ std::optional<Group> Group::parse(Parser& parser)
         {
             parser.pop_group_stack();
             return group;
+        }
+        else
+        {
+            parser.log_parse_error(
+                fmt::format("Unexpected token {} found for group {}", content->content(), group.m_name));
         }
     }
     parser.pop_group_stack();

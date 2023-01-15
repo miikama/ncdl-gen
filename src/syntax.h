@@ -10,9 +10,13 @@ namespace ncdlgen
 
 bool is_keyword(const std::string_view word);
 
-std::optional<NetCDFElementaryType> type_for_token(const Token &token);
+// any keyword stops variable declaration part
+// } ends variable declaration part because it ends the group
+bool is_group_end(const std::string_view word);
 
-const std::string_view name_for_type(const NetCDFElementaryType &type);
+std::optional<NetCDFElementaryType> type_for_token(const Token& token);
+
+const std::string_view name_for_type(const NetCDFElementaryType& type);
 
 // clang-format off
 template <NetCDFElementaryType>

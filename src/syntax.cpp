@@ -17,6 +17,8 @@ bool is_keyword(const std::string_view word)
     return keywords.find(word) != keywords.end();
 }
 
+bool is_group_end(const std::string_view word) { return word == "}" || is_keyword(word); }
+
 std::optional<NetCDFElementaryType> type_for_token(const Token& token)
 {
     if (token.content() == "char")
