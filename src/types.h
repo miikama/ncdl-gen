@@ -300,7 +300,7 @@ class RootGroup : public Element
     static std::optional<RootGroup> parse(Parser&);
 
   private:
-    std::optional<Group> m_group{};
+    std::unique_ptr<Group> m_group{};
 };
 
 } // namespace ncdlgen

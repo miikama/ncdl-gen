@@ -819,7 +819,13 @@ std::optional<RootGroup> RootGroup::parse(Parser& parser)
     }
 
     RootGroup root{};
-    root.m_group = Group::parse(parser);
+    auto group = Group::parse(parser);
+    if (!group)
+    {
+        return {};
+    }
+
+    root.m_group = std::make_unique<Group>(*group);
 
     return root;
 }
