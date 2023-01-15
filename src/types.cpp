@@ -847,6 +847,16 @@ const std::vector<ComplexType>& Group::types() const
     return m_types->types;
 }
 
+const std::vector<Variable>& Group::variables() const
+{
+    static std::vector<Variable> variables{};
+    if (!m_variables)
+    {
+        return variables;
+    }
+    return m_variables->variables();
+}
+
 std::vector<Variable>& Group::variables()
 {
     static std::vector<Variable> variables{};

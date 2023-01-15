@@ -262,6 +262,7 @@ class Variables : public Element
     static std::optional<Variables> parse(Parser&);
 
     std::vector<Variable>& variables() { return m_variables; }
+    const std::vector<Variable>& variables() const { return m_variables; }
 
   private:
     std::vector<Variable> m_variables{};
@@ -282,6 +283,8 @@ class Group : public Element
 
     const std::vector<ComplexType>& types() const;
     std::vector<Variable>& variables();
+    const std::vector<Variable>& variables() const;
+    const std::vector<Group>& groups() const { return m_groups; };
 
   private:
     std::optional<Types> m_types{};
