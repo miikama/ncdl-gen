@@ -36,6 +36,20 @@ std::optional<const Token> Parser::peek()
     return m_tokens[m_cursor];
 }
 
+static std::vector<std::string> forbidden_identifiers{
+    "{", "}", "(", ")", "*", ":", ";", ",",
+};
+
+std::optional<const Token> Parser::pop_identifier()
+{
+    if (peek_specific(forbidden_identifiers))
+    {
+        pop();
+        return {};
+    }
+    return pop();
+}
+
 std::optional<const Token> Parser::peek_specific(const std::vector<std::string>& possible_tokens)
 {
     auto token = peek();

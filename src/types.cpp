@@ -759,15 +759,17 @@ std::string Group::description(int indent) const
 std::optional<Group> Group::parse(Parser& parser)
 {
 
-    auto group_name = parser.pop();
+    auto group_name = parser.pop_identifier();
     if (!group_name)
     {
-        fmt::print("Could not find group name when parsing group\n");
+        parser.log_parse_error("Could not find group name when parsing group");
+        return {};
     }
     auto left_bracket = parser.pop_specific({"{"});
     if (!left_bracket)
     {
-        fmt::print("Could not find group starting brace when parsing group {}\n", group_name->content());
+        parser.log_parse_error(
+            fmt::format("Could not find group starting brace when parsing group {}", group_name->content()));
         return {};
     }
     Group group{};
