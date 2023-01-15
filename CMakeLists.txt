@@ -4,8 +4,8 @@ project("ncdl-gen")
 
 enable_language(CXX)
 
-# include fmt
-find_package(fmt REQUIRED)
+include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+conan_basic_setup()
 
 add_subdirectory(src)
 
