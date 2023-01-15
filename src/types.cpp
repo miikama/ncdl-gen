@@ -131,11 +131,11 @@ std::string Dimension::description(int indent) const
 std::string RootGroup::description(int indent) const
 {
     Description description(indent);
-    description << "RootGroup " + m_name;
-    if (m_group)
+    description << "RootGroup";
+    if (group)
     {
         Description group_description(indent, false);
-        group_description << m_group->description(indent + 1);
+        group_description << group->description(indent + 1);
         return description.description + group_description.description;
     }
     return description.description;
@@ -827,7 +827,7 @@ std::optional<RootGroup> RootGroup::parse(Parser& parser)
         return {};
     }
 
-    root.m_group = std::make_unique<Group>(*group);
+    root.group = std::make_unique<Group>(*group);
 
     return root;
 }

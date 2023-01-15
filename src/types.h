@@ -290,17 +290,15 @@ class Group : public Element
     std::vector<Group> m_groups{};
 };
 
-class RootGroup : public Element
+struct RootGroup
 {
-  public:
     void print_tree();
 
-    std::string description(int indent) const override;
+    std::string description(int indent) const;
 
     static std::optional<RootGroup> parse(Parser&);
 
-  private:
-    std::unique_ptr<Group> m_group{};
+    std::unique_ptr<Group> group{};
 };
 
 } // namespace ncdlgen
