@@ -189,20 +189,6 @@ std::string ComplexType::name() const
     return std::visit([](auto&& arg) -> std::string { return arg.name; }, type);
 }
 
-std::string Types::description(int indent) const
-{
-    Description description(indent, true);
-    description << "Types";
-    description.push_indent();
-    description.push_indent();
-    description.push_indent();
-    for (auto& type : types)
-    {
-        description << type.as_string();
-    }
-    return description.description;
-}
-
 std::string Dimensions::description(int indent) const
 {
     Description description(indent);
@@ -756,6 +742,7 @@ std::optional<ComplexType> ComplexType::parse(Parser& parser)
         {
             return ComplexType(*type);
         }
+        parser.log_parse_error("Failed to parse CompoundType");
         return {};
     }
 
@@ -799,22 +786,17 @@ std::optional<ComplexType> ComplexType::parse(Parser& parser)
     return ComplexType{VLenType(vlen_name->content(), *actual_type)};
 }
 
-std::optional<Types> Types::parse(Parser& parser)
+void Types::parse(Parser& parser, std::vector<ComplexType>& types)
 {
     // types:
     //     ubyte enum enum_t {Clear = 0, Cumulonimbus = 1, Stratus = 2};
     //     opaque(11) opaque_t;
     //     int(*) vlen_t;
-    Types types{};
     while (auto type = ComplexType::parse(parser))
     {
-        types.types.push_back(std::move(*type));
+        parser.skip_extra_tokens();
+        types.push_back(std::move(*type));
     }
-    if (types.types.empty())
-    {
-        return {};
-    }
-    return types;
 }
 
 void VariableSection::parse(Parser& parser, Group& group)
@@ -857,9 +839,19 @@ std::string Group::description(int indent) const
 {
     Description description(indent, false);
     description << "Group " + m_name + "\n";
-    if (m_types)
+    if (!m_types.empty())
     {
-        description << m_types->description(indent + 1);
+        description.push_indent();
+        description.push_indent();
+        description << "Types:\n";
+        description.push_indent();
+        for (auto& type : m_types)
+        {
+            description << fmt::format("{}\n", type.as_string());
+        }
+        description.pop_indent();
+        description.pop_indent();
+        description.pop_indent();
     }
     if (m_dimensions)
     {
@@ -906,7 +898,7 @@ std::optional<Group> Group::parse(Parser& parser)
         }
         else if (content->content() == "types:")
         {
-            group.m_types = Types::parse(parser);
+            Types::parse(parser, group.m_types);
         }
         else if (content->content() == "data:")
         {
@@ -957,16 +949,6 @@ std::optional<RootGroup> RootGroup::parse(Parser& parser)
     root.group = std::make_unique<Group>(*group);
 
     return root;
-}
-
-const std::vector<ComplexType>& Group::types() const
-{
-    static std::vector<ComplexType> empty_types{};
-    if (!m_types)
-    {
-        return empty_types;
-    }
-    return m_types->types;
 }
 
 const std::vector<Variable>& Group::variables() const

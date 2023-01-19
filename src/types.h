@@ -205,9 +205,7 @@ struct NetCDFType
 
 struct Types
 {
-    std::string description(int indent) const;
-    static std::optional<Types> parse(Parser&);
-    std::vector<ComplexType> types{};
+    static void parse(Parser&, std::vector<ComplexType>& types);
 };
 
 struct ValidRangeValue
@@ -298,13 +296,13 @@ class Group : public Element
 
     static std::optional<Group> parse(Parser&);
 
-    const std::vector<ComplexType>& types() const;
+    const std::vector<ComplexType>& types() const { return m_types; }
     std::vector<Variable>& variables();
     const std::vector<Variable>& variables() const;
     const std::vector<Group>& groups() const { return m_groups; };
 
   private:
-    std::optional<Types> m_types{};
+    std::vector<ComplexType> m_types{};
     std::optional<Dimensions> m_dimensions{};
     std::optional<Variables> m_variables{};
     std::vector<Group> m_groups{};
