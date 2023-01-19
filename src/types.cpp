@@ -31,6 +31,18 @@ std::string_view NetCDFType::name() const
         type);
 }
 
+std::optional<ComplexType> NetCDFType::as_complex_type() const
+{
+    if (!std::holds_alternative<ComplexType>(type))
+    {
+        return {};
+    }
+    else
+    {
+        return std::get<ComplexType>(type);
+    }
+}
+
 std::string Number::as_string() const
 {
     return std::visit([](auto&& arg) -> std::string { return fmt::format("{}", arg); }, value);
@@ -69,7 +81,102 @@ std::string ArrayType::as_string() const
     return fmt::format("{} {} {}", name_for_type(type), name, dimensions.as_string());
 }
 
-std::string ComplexType::description() const
+void CompoundType::add_type(const std::string_view name, const ComplexType& type)
+{
+    types.push_back(type);
+    type_names.push_back(std::string(name));
+}
+
+std::string CompoundType::as_string() const
+{
+    std::string type_name = fmt::format("CompoundType {}: [ ", name);
+    if (types.size() == 1)
+    {
+        return fmt::format("{} ]", type_name);
+    }
+    for (std::size_t i = 0; i < types.size(); i++)
+    {
+        auto& child_type = types.at(i);
+        auto& child_type_name = type_names.at(i);
+
+        if (i == 0)
+        {
+            type_name += fmt::format("{} {}", child_type.name(), child_type_name);
+        }
+        else
+        {
+            type_name += fmt::format("; {} {}", child_type.name(), child_type_name);
+        }
+    }
+    return fmt::format("{} ]", type_name);
+}
+
+std::optional<CompoundType> CompoundType::parse(Parser& parser)
+{
+    auto name = parser.pop_identifier();
+    if (!name)
+    {
+        parser.log_parse_error("Could not find name for compound type.");
+        return {};
+    }
+
+    CompoundType type{name->content()};
+    auto start_bracket = parser.pop_specific({"{"});
+    if (!start_bracket)
+    {
+        parser.log_parse_error(fmt::format("Could not find '{' for compound type '{}'.", name->content()));
+        return {};
+    }
+
+    // Parse compound type child types
+    while (true)
+    {
+        auto possible_type = parser.pop();
+        if (!possible_type)
+        {
+            parser.log_parse_error("Could not find type name in compound type.");
+            return {};
+        }
+        auto child_type = parser.resolve_type_for_name(possible_type->content());
+        if (!child_type)
+        {
+            parser.log_parse_error(
+                fmt::format("No type available to type name {}", possible_type->content()));
+            return {};
+        }
+        auto child_name = parser.pop_identifier();
+        if (!child_name)
+        {
+            parser.log_parse_error(fmt::format("No type name for type {} found.", possible_type->content()));
+            return {};
+        }
+        auto stop_semicolon = parser.pop_specific({";"});
+        if (!stop_semicolon)
+        {
+            parser.log_parse_error(
+                fmt::format("Could not find ';' for compound type child type {}", child_name->content()));
+            return {};
+        }
+        auto child_complex_type = child_type->as_complex_type();
+        if (!child_complex_type)
+        {
+            parser.log_parse_error("Elementary types as part of compound types are not supported.");
+            return {};
+        }
+        type.add_type(child_name->content(), *child_complex_type);
+
+        auto close_bracket = parser.peek_specific({"}"});
+        if (close_bracket)
+        {
+            parser.pop();
+            break;
+        }
+    }
+
+    return type;
+}
+
+std::string ComplexType::as_string() const
 {
     return std::visit([](auto&& arg) -> std::string { return arg.as_string(); }, type);
 }
@@ -88,7 +195,7 @@ std::string Types::description(int indent) const
     description.push_indent();
     for (auto& type : types)
     {
-        description << type.description();
+        description << type.as_string();
     }
     return description.description;
 }
@@ -639,11 +746,21 @@ std::optional<ComplexType> ComplexType::parse(Parser& parser)
             OpaqueType(opaque_name->content(), std::stoi(std::string(opaque_size->content())))};
     }
 
+    // compound cmpd_t { vlen_t f1; enum_t f2;};
+    if (type_name->content() == "compound")
+    {
+        if (auto type = CompoundType::parse(parser))
+        {
+            return ComplexType(*type);
+        }
+        return {};
+    }
+
     auto actual_type = type_for_token(*type_name);
     if (!actual_type)
         return {};
 
-    if (parser.peek() && parser.peek()->content() == "enum")
+    if (parser.peek_specific({"enum"}))
     {
         //     ubyte enum enum_t {Clear = 0, Cumulonimbus = 1, Stratus = 2};
         parser.pop();

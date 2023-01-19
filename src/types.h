@@ -152,6 +152,20 @@ struct VLenType
     std::string name{};
 };
 
+struct CompoundType
+{
+    CompoundType(const std::string_view name) : name(name) {}
+    std::string as_string() const;
+
+    static std::optional<CompoundType> parse(Parser&);
+
+    void add_type(const std::string_view name, const ComplexType& type);
+
+    std::vector<ComplexType> types;
+    std::vector<std::string> type_names;
+    std::string name{};
+};
+
 struct ArrayType
 {
     std::string as_string() const;
@@ -167,13 +181,14 @@ struct ComplexType
     explicit ComplexType(VLenType type) : type(type) {}
     explicit ComplexType(EnumType type) : type(type) {}
     explicit ComplexType(ArrayType type) : type(type) {}
+    explicit ComplexType(CompoundType type) : type(type) {}
 
-    std::string description() const;
+    std::string as_string() const;
     std::string name() const;
 
     static std::optional<ComplexType> parse(Parser&);
 
-    std::variant<OpaqueType, EnumType, VLenType, ArrayType> type;
+    std::variant<OpaqueType, EnumType, VLenType, ArrayType, CompoundType> type;
 };
 
 struct NetCDFType
@@ -184,6 +199,8 @@ struct NetCDFType
     std::variant<NetCDFElementaryType, ComplexType> type;
 
     std::string_view name() const;
+
+    std::optional<ComplexType> as_complex_type() const;
 };
 
 struct Types

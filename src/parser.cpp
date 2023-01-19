@@ -326,6 +326,11 @@ std::optional<Array> Parser::parse_complex_type_data(const ComplexType& type)
             {
                 return parse_array(arg.type);
             }
+            else if constexpr (std::is_same_v<T, CompoundType>)
+            {
+                fmt::print("TODO: parsing EnumType unsupported!\n");
+                return {};
+            }
             else
             {
                 static_assert(always_false_v<T>, "Visiting unsupported type!");
