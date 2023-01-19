@@ -898,6 +898,8 @@ std::optional<Group> Group::parse(Parser& parser)
 
     while (auto content = parser.pop())
     {
+        parser.skip_extra_tokens();
+
         if (content->content() == "dimensions:")
         {
             group.m_dimensions = Dimensions::parse(parser);

@@ -339,4 +339,19 @@ std::optional<Array> Parser::parse_complex_type_data(const ComplexType& type)
         type.type);
 }
 
+void Parser::skip_extra_tokens()
+{
+    while (auto next_token = peek())
+    {
+        if (next_token->content() == ";")
+        {
+            pop();
+        }
+        else
+        {
+            return;
+        }
+    }
+}
+
 } // namespace ncdlgen
