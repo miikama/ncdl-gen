@@ -38,9 +38,6 @@ class Parser
 
     Variable* resolve_variable_for_name(const std::string_view var_name);
 
-    void log_parse_error(const std::string& message);
-
-  private:
     /**
      * During parsing, resolve typenames to types. Typically
      * these are the basic NetCDF types, but for user defined
@@ -48,6 +45,9 @@ class Parser
      */
     std::optional<NetCDFType> resolve_type_for_name(const std::string_view type_name);
 
+    void log_parse_error(const std::string& message);
+
+  private:
     SourceLocation current_cursor_location() const;
 
     size_t m_cursor{};
