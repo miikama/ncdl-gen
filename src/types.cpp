@@ -74,7 +74,10 @@ std::string EnumType::as_string() const
     }
     return fmt::format("{} ]", type_name);
 }
-std::string VLenType::as_string() const { return fmt::format("VLenType {} (*)", name_for_type(type)); }
+std::string VLenType::as_string() const
+{
+    return fmt::format("VLenType {} (*) {}", name_for_type(type), name);
+}
 
 std::string ArrayType::as_string() const
 {
