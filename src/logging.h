@@ -27,6 +27,13 @@ struct Description
     }
 
     void push_indent() { indent++; }
+    void pop_indent()
+    {
+        if (indent > 0)
+        {
+            indent--;
+        }
+    }
 
     std::string description{};
     size_t indent{};
