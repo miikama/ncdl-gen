@@ -803,11 +803,12 @@ void VariableSection::parse(Parser& parser, Group& group)
 {
     while (auto next_token = parser.peek())
     {
-        if (!next_token || is_keyword(next_token->content()))
+        if (!next_token || is_group_end(next_token->content()))
         {
             break;
         }
-        // TODO skip semicolons
+        parser.skip_extra_tokens();
+
         auto name = parser.pop();
         auto* variable = parser.resolve_variable_for_name(name->content());
         if (!variable)
@@ -821,8 +822,8 @@ void VariableSection::parse(Parser& parser, Group& group)
             fmt::print("Could not find equals for variable data for variable {}\n", name->content());
             return;
         }
-        auto array = parser.parse_array(variable->basic_type());
-        if (!array)
+        auto data = parser.parse_data(variable->type());
+        if (!data)
         {
             return;
         }

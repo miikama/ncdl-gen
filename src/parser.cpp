@@ -114,7 +114,6 @@ void Parser::log_parse_error(const std::string& message)
 
 Group* Parser::resolve_group_from_path(const std::string_view group_path)
 {
-    fmt::print("resolving group '{}',\n", group_path);
     if (group_path.empty())
     {
         return nullptr;
@@ -124,13 +123,15 @@ Group* Parser::resolve_group_from_path(const std::string_view group_path)
 
     Group* group{group_stack.front()};
 
+    // The first group is root group. We do not support paths
+    // that reference the root group by name, the paths should
+    // start one level lower
     for (std::size_t i = 0; i < path_components.size(); i++)
     {
         auto component{path_components[i]};
         bool found_group{false};
         for (auto& possible_group : group->groups())
         {
-            fmt::print("resolving path component '{}' at group '{}',\n", component, possible_group.name());
             if (possible_group.name() == path_components[i])
             {
                 group = &possible_group;
@@ -172,7 +173,6 @@ std::optional<NetCDFType> Parser::resolve_type_for_name(const std::string_view t
         }
 
         auto type_name_without_path{type_name.substr(type_name.find_last_of("/") + 1, type_name.size())};
-        fmt::print("Finding type {} from group {}\n", type_name_without_path, group->name());
         for (auto& type : group->types())
         {
             if (type.name() == type_name_without_path)
@@ -321,6 +321,29 @@ std::optional<Number> Parser::parse_number(const NetCDFType& type)
     }
 }
 
+std::optional<Array> Parser::parse_data(const NetCDFType& type)
+{
+
+    return std::visit(
+        [&](auto&& arg) -> std::optional<Array> {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr (std::is_same_v<T, NetCDFElementaryType>)
+            {
+                return parse_array(arg);
+            }
+            else if constexpr (std::is_same_v<T, ComplexType>)
+            {
+                return parse_complex_type_data(arg);
+            }
+            else
+            {
+
+                static_assert(always_false_v<T>, "Visiting unsupported type.");
+            }
+        },
+        type.type);
+}
+
 std::optional<Array> Parser::parse_array(const NetCDFElementaryType& type)
 {
     // Parsing 17, 18, 19
@@ -391,7 +414,7 @@ std::optional<Array> Parser::parse_complex_type_data(const ComplexType& type)
             }
             else if constexpr (std::is_same_v<T, CompoundType>)
             {
-                fmt::print("TODO: parsing EnumType unsupported!\n");
+                fmt::print("TODO: parsing CompoundType unsupported!\n");
                 return {};
             }
             else
