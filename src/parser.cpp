@@ -3,6 +3,7 @@
 
 #include "parser.h"
 #include "syntax.h"
+#include "utils.h"
 
 namespace ncdlgen
 {
@@ -111,6 +112,44 @@ void Parser::log_parse_error(const std::string& message)
                cursor_location.column + 1, message);
 }
 
+Group* Parser::resolve_group_from_path(const std::string_view group_path)
+{
+    fmt::print("resolving group '{}',\n", group_path);
+    if (group_path.empty())
+    {
+        return nullptr;
+    }
+
+    auto path_components{split_string(group_path, '/')};
+
+    Group* group{group_stack.front()};
+
+    for (std::size_t i = 0; i < path_components.size(); i++)
+    {
+        auto component{path_components[i]};
+        bool found_group{false};
+        for (auto& possible_group : group->groups())
+        {
+            fmt::print("resolving path component '{}' at group '{}',\n", component, possible_group.name());
+            if (possible_group.name() == path_components[i])
+            {
+                group = &possible_group;
+                found_group = true;
+                break;
+            }
+        }
+
+        if (!found_group)
+        {
+            log_parse_error(
+                fmt::format("Could not associate group path component '{}' to any group", component));
+            return nullptr;
+        }
+    }
+
+    return group;
+}
+
 std::optional<NetCDFType> Parser::resolve_type_for_name(const std::string_view type_name)
 {
     // Basic type
@@ -118,6 +157,30 @@ std::optional<NetCDFType> Parser::resolve_type_for_name(const std::string_view t
     if (type != NetCDFElementaryType::Default)
     {
         return *type;
+    }
+
+    // the types can be defined with absolute paths with group names
+    // e.g. /g/type_name
+    if (type_name.find("/") != std::string::npos)
+    {
+        auto path{type_name.substr(0, type_name.find_last_of("/") + 1)};
+        auto* group = resolve_group_from_path(path);
+        if (!group)
+        {
+            log_parse_error(fmt::format("Could not resolve group of group type {}", type_name));
+            return {};
+        }
+
+        auto type_name_without_path{type_name.substr(type_name.find_last_of("/") + 1, type_name.size())};
+        fmt::print("Finding type {} from group {}\n", type_name_without_path, group->name());
+        for (auto& type : group->types())
+        {
+            if (type.name() == type_name_without_path)
+            {
+                return type;
+            }
+        }
+        return {};
     }
 
     // Possibly complex user defined type

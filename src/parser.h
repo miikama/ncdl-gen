@@ -38,6 +38,7 @@ class Parser
 
     void skip_extra_tokens();
 
+    Group* resolve_group_from_path(const std::string_view group_path);
     Variable* resolve_variable_for_name(const std::string_view var_name);
 
     /**

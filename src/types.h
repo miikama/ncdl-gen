@@ -300,6 +300,7 @@ class Group : public Element
     std::vector<Variable>& variables();
     const std::vector<Variable>& variables() const;
     const std::vector<Group>& groups() const { return m_groups; };
+    std::vector<Group>& groups() { return m_groups; };
 
   private:
     std::vector<ComplexType> m_types{};
