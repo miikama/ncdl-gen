@@ -1,7 +1,7 @@
 
 
 
-set(SOURCES tokeniser.cpp parser.cpp types.cpp syntax.cpp)
+set(SOURCES tokeniser.cpp parser.cpp types.cpp syntax.cpp utils.cpp)
 
 add_library(ncdlgen ${SOURCES})
 
