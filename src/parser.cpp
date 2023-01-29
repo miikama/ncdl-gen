@@ -403,7 +403,7 @@ std::optional<Array> Parser::parse_complex_type_data(const ComplexType& type)
                 auto end_bracket = pop_specific({"}"});
                 if (!end_bracket)
                 {
-                    fmt::print("Did not find end bracket when parsing type {}", arg.name);
+                    log_parse_error(fmt::format("Did not find end bracket when parsing type {}", arg.name));
                     return {};
                 }
                 return array;
@@ -414,7 +414,36 @@ std::optional<Array> Parser::parse_complex_type_data(const ComplexType& type)
             }
             else if constexpr (std::is_same_v<T, CompoundType>)
             {
-                fmt::print("TODO: parsing CompoundType unsupported!\n");
+                auto start_bracket = pop_specific({"{"});
+                if (!start_bracket)
+                {
+                    log_parse_error(fmt::format(
+                        "Could not find start bracket for CompoundType '{}' definition", arg.name));
+                    return {};
+                }
+                for (auto& contained_type : arg.types)
+                {
+                    auto contained_data = parse_complex_type_data(ComplexType(contained_type));
+                    if (!contained_data)
+                    {
+                        log_parse_error(fmt::format("Could not parse variable {} contents for type {}",
+                                                    arg.name, arg.name));
+                        return {};
+                    }
+                    auto comma_or_end_bracket = pop_specific({",", "}"});
+                    if (!comma_or_end_bracket)
+                    {
+                        log_parse_error(fmt::format("Could not find ',' or '}' to separate or end "
+                                                    "compound variable '{}' data section.",
+                                                    arg.name));
+                    }
+                    if (comma_or_end_bracket->content() == "}")
+                    {
+                        break;
+                    }
+                }
+                fmt::print("Succesfully parsed compound type but not returning data. Now at token {}\n",
+                           peek()->content());
                 return {};
             }
             else
