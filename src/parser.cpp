@@ -375,8 +375,35 @@ std::optional<Array> Parser::parse_complex_type_data(const ComplexType& type)
             }
             else if constexpr (std::is_same_v<T, EnumType>)
             {
-                fmt::print("TODO: parsing EnumType unsupported!\n");
-                return {};
+                auto enum_token = pop();
+                if (!enum_token || enum_token->content().empty())
+                {
+                    log_parse_error("No token for parsing EnumType data.");
+                    return {};
+                }
+                // e.g. enum_t.Stratus
+                auto enum_string{enum_token->content()};
+                if (enum_string.find('.') != std::string::npos)
+                {
+                    auto split = split_string(enum_string, '.');
+                    if (split.size() != 2)
+                    {
+                        log_parse_error("Incorrect number of '.' in EnumType data entry.");
+                        return {};
+                    }
+                    auto enum_type = resolve_type_for_name(split[0]);
+                    if (!enum_type)
+                    {
+                        log_parse_error(fmt::format(
+                            "Could not find type '' when parsing EnumType data entry.", split[0]));
+                        return {};
+                    }
+                    // TODO: validate the enum variable entry name ('Stratus' part)
+                }
+                fmt::print("Succesfully parsed enum type but not returning data. Now at token {}\n",
+                           peek()->content());
+                // TODO: return actual EnumType data
+                return Array();
             }
             else if constexpr (std::is_same_v<T, VLenType>)
             {
@@ -444,7 +471,8 @@ std::optional<Array> Parser::parse_complex_type_data(const ComplexType& type)
                 }
                 fmt::print("Succesfully parsed compound type but not returning data. Now at token {}\n",
                            peek()->content());
-                return {};
+                // TODO: return actual CompoundType data
+                return Array();
             }
             else
             {
