@@ -1,4 +1,3 @@
-
 # CDL parsing
 
 parse Netcdf CDL format
@@ -6,7 +5,6 @@ parse Netcdf CDL format
 There is a nice BNF tester [online](https://bnfplayground.pauliankline.com)
 
 The CDL grammar is also available [here](https://manpages.ubuntu.com/manpages/focal/man1/ncgen.1.html)
-
 
 ## Install dependencies with conan
 
@@ -51,7 +49,6 @@ docker run --rm -it -v $(pwd):/home/$(whoami) ncdgen bash
 
 This mounts the repository at the home directory of the container user.
 
-
 ## Manual dependency build instructions [Deprecated for conan build]
 
 Dependencies
@@ -60,7 +57,7 @@ Dependencies
 fmt
 ```
 
-`fmt` installation instructions https://fmt.dev/latest/usage.html#installing-the-library
+`fmt` installation instructions <https://fmt.dev/latest/usage.html#installing-the-library>
 
 Basic build
 
@@ -80,3 +77,22 @@ cmake -DBUILD_TESTING=ON ..
 make
 make test
 ```
+
+## Building VSCode extension
+
+Official guides
+
+[Getting started](https://code.visualstudio.com/api/get-started/your-first-extension) with extensions
+
+[VSCode language extensions](https://code.visualstudio.com/api/language-extensions/syntax-highlight-guide)
+
+Text mate grammar guides
+
+[Writing grammar](https://macromates.com/manual/en/language_grammars)
+
+[Notes about textmate language grammar](https://www.apeth.com/nonblog/stories/textmatebundle.html)
+
+
+Some inspiration is derived from the first example I found, which is the Jakt language in SerenityOS
+
+[Jakt language syntax](https://github.com/SerenityOS/jakt/blob/main/editors/vscode/syntaxes/jakt.tmLanguage.json)

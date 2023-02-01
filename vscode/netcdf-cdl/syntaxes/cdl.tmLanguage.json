@@ -1,0 +1,76 @@
+{
+    "scopeName": "source.cdl",
+    "patterns": [
+        {
+            "include": "#expression"
+        }
+    ],
+    "repository": {
+        "expression": {
+            "patterns": [
+                {
+                    "include": "#comment"
+                },
+                {
+                    "include": "#type"
+                },
+                {
+                    "include": "#keyword"
+                },
+                {
+                    "include": "#paren-expression"
+                }
+            ]
+        },
+        "keyword": {
+            "match": "netcdf|variables:|dimensions:|types:|data:|group:",
+            "name": "keyword.keyword"
+        },
+        "comment": {
+            "patterns": [
+                {
+                    "captures": {
+                        "1": {
+                            "name": "punctuation.definition.comment.cdl"
+                        }
+                    },
+                    "match": "(//).*$\\n?",
+                    "name": "comment.line.double-slash.cdl"
+                }
+            ]
+        },
+        "type": {
+            "patterns": [
+                {
+                    "captures": {
+                        "1": {
+                            "name": "constant.type.numeric.cdl"
+                        }
+                    },
+                    "match": "char | byte | ubyte | short | ushort | int | uint | long | int64 | uint64 | float | real | double | string ",
+                    "name": "storage.type.numeric.cdl"
+                }
+            ]
+        },
+        "paren-expression": {
+            "begin": "(\\{)",
+            "end": "(\\})",
+            "beginCaptures": {
+                "0": {
+                    "name": "punctuation.paren.open"
+                }
+            },
+            "endCaptures": {
+                "0": {
+                    "name": "punctuation.paren.close"
+                }
+            },
+            "name": "expression.group",
+            "patterns": [
+                {
+                    "include": "#expression"
+                }
+            ]
+        }
+    }
+}
