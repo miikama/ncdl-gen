@@ -86,6 +86,8 @@ Official guides
 
 [VSCode language extensions](https://code.visualstudio.com/api/language-extensions/syntax-highlight-guide)
 
+The language extensions add a `language` [Contribution Point](https://code.visualstudio.com/api/references/contribution-points)
+
 Text mate grammar guides
 
 [Writing grammar](https://macromates.com/manual/en/language_grammars)

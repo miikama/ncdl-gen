@@ -1,12 +1,13 @@
 netcdf foo {  // an example netCDF specification in CDL
 
-              dimensions:
-                   lat = 10, lon = 5, time = unlimited ;
-
               types:
                   ubyte enum enum_t {Clear = 0, Cumulonimbus = 1, Stratus = 2};
                   opaque(11) opaque_t;
                   int(*) vlen_t;
+
+              dimensions:
+                   lat = 10, lon = 5, time = unlimited ;
+                   height = 100 ;
 
               variables:
                    ubyte   tag;

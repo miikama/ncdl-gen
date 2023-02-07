@@ -9,22 +9,169 @@
         "expression": {
             "patterns": [
                 {
+                    "include": "#variables-section"
+                },
+                {
+                    "include": "#dimensions-section"
+                },
+                {
                     "include": "#comment"
                 },
                 {
-                    "include": "#type"
+                    "include": "#keywords"
                 },
                 {
-                    "include": "#keyword"
-                },
-                {
-                    "include": "#paren-expression"
+                    "include": "#strings"
                 }
             ]
         },
-        "keyword": {
-            "match": "netcdf|variables:|dimensions:|types:|data:|group:",
-            "name": "keyword.keyword"
+        "variables-section": {
+            "name": "meta.variable.section.cdl",
+            "begin": "(variables:)",
+            "beginCaptures": {
+                "1": {
+                    "name": "constant.language.cdl"
+                }
+            },
+            "end": "(.*)(?=dimensions:|data:|types:|group:)",
+            "patterns": [
+                {
+                    "include": "#comment"
+                },
+                {
+                    "include": "#variable-definition"
+                },
+                {
+                    "include": "#strings"
+                },
+                {
+                    "name": "constant.temp.cdl",
+                    "match": "(\\w+:)(?=long_name)"
+                }
+            ]
+        },
+        "variable-definition": {
+            "name": "meta.variable.definition.cdl",
+            "begin": "\\s*(\\b[^\\d\\W]+[\\w_]*)\\s+",
+            "beginCaptures": {
+                "1": {
+                    "name": "storage.type.numeric.cdl"
+                }
+            },
+            "patterns": [
+                {
+                    "include": "#many-variables-in-one-line"
+                },
+                {
+                    "match": ",",
+                    "name": "punctuation.comma.cdl"
+                }
+            ],
+            "end": ";"
+        },
+        "many-variables-in-one-line": {
+            "patterns": [
+                {
+                    "match": "(\\b[^\\d\\W]+[\\w_]*)\\s*",
+                    "captures": {
+                        "1": {
+                            "name": "variable.other.cdl"
+                        }
+                    }
+                },
+                {
+                    "include": "#dimension-list"
+                }
+            ]
+        },
+        "dimension-list": {
+            "name": "meta.variable.definition.dimensions.cdl",
+            "begin": "(\\()",
+            "beginCaptures": {
+                "1": {
+                    "name": "punctuation.bracket.cdl"
+                }
+            },
+            "patterns": [
+                {
+                    "match": "\\w+",
+                    "name": "storage.modifier.dimension.cdl"
+                },
+                {
+                    "match": ",",
+                    "name": "punctuation.comma.cdl"
+                }
+            ],
+            "end": "(\\))",
+            "endCaptures": {
+                "1": {
+                    "name": "punctuation.bracket.cdl"
+                }
+            }
+        },
+        "dimensions-section": {
+            "name": "meta.dimensions.section.cdl",
+            "begin": "(dimensions:)",
+            "beginCaptures": {
+                "1": {
+                    "name": "constant.language.cdl"
+                }
+            },
+            "end": "(.*)(?=data:|variables:|types:|group:)",
+            "patterns": [
+                {
+                    "include": "#comment"
+                },
+                {
+                    "include": "#dimension-definitions"
+                },
+                {
+                    "include": "#strings"
+                }
+            ]
+        },
+        "dimension-definitions": {
+            "name": "meta.dimension.definition.cdl",
+            "begin": "\\s*(\\b[^\\d\\W]+[\\w_]+)",
+            "beginCaptures": {
+                "1": {
+                    "name": "storage.modifier.dimension.cdl"
+                }
+            },
+            "patterns": [
+                {
+                    "name": "punctuation.equals.cdl",
+                    "match": "="
+                },
+                {
+                    "name": "storage.type.numeric.cdl",
+                    "match": "\\d+"
+                },
+                {
+                    "include": "#UNLIMITED"
+                }
+            ],
+            "end": ";|,"
+        },
+        "keywords": {
+            "patterns": [
+                {
+                    "match": "netcdf|variables:|dimensions:|types:|data:|group:",
+                    "name": "constant.language.cdl"
+                },
+                {
+                    "match": "_FillValue|valid_range|units|long_name|_Shuffle|_Storage|_ChunkSizes|_Fletcher32|_Endianness|_DeflateLevel",
+                    "name": "constant.language.attribute.cdl"
+                }
+            ]
+        },
+        "UNLIMITED": {
+            "patterns": [
+                {
+                    "match": "unlimited|UNLIMITED",
+                    "name": "constant.language.cdl"
+                }
+            ]
         },
         "comment": {
             "patterns": [
@@ -39,7 +186,7 @@
                 }
             ]
         },
-        "type": {
+        "types": {
             "patterns": [
                 {
                     "captures": {
@@ -47,28 +194,45 @@
                             "name": "constant.type.numeric.cdl"
                         }
                     },
-                    "match": "char | byte | ubyte | short | ushort | int | uint | long | int64 | uint64 | float | real | double | string ",
+                    "match": "char|byte|ubyte|short|ushort|int|uint|long|int64|uint64|float|real|double|string",
                     "name": "storage.type.numeric.cdl"
+                },
+                {
+                    "match": "enum",
+                    "name": "storage.type.enum.cdl"
+                },
+                {
+                    "match": "compound",
+                    "name": "storage.type.compound.cdl"
+                },
+                {
+                    "match": "opaque\\(\\d+\\)",
+                    "name": "storage.type.opaque.cdl"
                 }
             ]
         },
-        "paren-expression": {
-            "begin": "(\\{)",
-            "end": "(\\})",
-            "beginCaptures": {
-                "0": {
-                    "name": "punctuation.paren.open"
-                }
-            },
-            "endCaptures": {
-                "0": {
-                    "name": "punctuation.paren.close"
-                }
-            },
-            "name": "expression.group",
+        "strings": {
             "patterns": [
                 {
-                    "include": "#expression"
+                    "name": "string.quoted.double.cdl",
+                    "begin": "(\")",
+                    "beginCaptures": {
+                        "1": {
+                            "name": "punctuation.begin.quote.double.cdl"
+                        }
+                    },
+                    "end": "(\")",
+                    "endCaptures": {
+                        "1": {
+                            "name": "punctuation.end.quote.double.cdl"
+                        }
+                    },
+                    "patterns": [
+                        {
+                            "name": "constant.character.escape.cdl",
+                            "match": "\\\\."
+                        }
+                    ]
                 }
             ]
         }
