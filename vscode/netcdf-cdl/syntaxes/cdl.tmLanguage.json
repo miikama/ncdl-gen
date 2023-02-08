@@ -30,7 +30,7 @@
             "begin": "(variables:)",
             "beginCaptures": {
                 "1": {
-                    "name": "constant.language.cdl"
+                    "name": "keyword.language.section.cdl"
                 }
             },
             "end": "(.*)(?=dimensions:|data:|types:|group:)",
@@ -42,17 +42,26 @@
                     "include": "#variable-definition"
                 },
                 {
+                    "include": "#global-definition"
+                },
+                {
+                    "include": "#global-attribute-definition"
+                },
+                {
+                    "include": "#attribute-definition"
+                },
+                {
                     "include": "#strings"
                 },
                 {
                     "name": "constant.temp.cdl",
-                    "match": "(\\w+:)(?=long_name)"
+                    "match": "(\\w+:)(?=notexisting)"
                 }
             ]
         },
         "variable-definition": {
             "name": "meta.variable.definition.cdl",
-            "begin": "\\s*(\\b[^\\d\\W]+[\\w_]*)\\s+",
+            "begin": "\\s*([^:]\\b[^\\d\\W]+[\\w_/]*)\\s+",
             "beginCaptures": {
                 "1": {
                     "name": "storage.type.numeric.cdl"
@@ -63,11 +72,15 @@
                     "include": "#many-variables-in-one-line"
                 },
                 {
-                    "match": ",",
-                    "name": "punctuation.comma.cdl"
+                    "include": "#comma"
                 }
             ],
-            "end": ";"
+            "end": ";",
+            "endCaptures": {
+                "1": {
+                    "name": "punctuation.semicolon.cdl"
+                }
+            }
         },
         "many-variables-in-one-line": {
             "patterns": [
@@ -95,7 +108,7 @@
             "patterns": [
                 {
                     "match": "\\w+",
-                    "name": "storage.modifier.dimension.cdl"
+                    "name": "entity.dimension.cdl"
                 },
                 {
                     "match": ",",
@@ -109,12 +122,73 @@
                 }
             }
         },
+        "global-attribute-definition": {
+            "name": "meta.variable.definition.cdl",
+            "begin": "\\s*(?<!\\w)(:)([^\\d\\W]+[\\w_]*)\\s+",
+            "beginCaptures": {
+                "1": {
+                    "name": "punctuation.colon.cdl"
+                },
+                "2": {
+                    "name": "support.attribute.global.cdl"
+                }
+            },
+            "patterns": [
+                {
+                    "include": "#equals"
+                },
+                {
+                    "include": "#strings"
+                },
+                {
+                    "include": "#comma"
+                }
+            ],
+            "end": ";",
+            "endCaptures": {
+                "1": {
+                    "name": "punctuation.semicolon.cdl"
+                }
+            }
+        },
+        "attribute-definition": {
+            "name": "meta.variable.definition.cdl",
+            "begin": "\\s*([^\\d\\W]+[\\w_]*)(:)([^\\d\\W]+[\\w_]*)\\s+",
+            "beginCaptures": {
+                "1": {
+                    "name": "variable.other.cdl"
+                },
+                "2": {
+                    "name": "punctuation.colon.cdl"
+                },
+                "3": {
+                    "name": "support.attribute.global.cdl"
+                }
+            },
+            "patterns": [
+                {
+                    "include": "#equals"
+                },
+                {
+                    "include": "#strings"
+                },
+                {
+                    "include": "#comma"
+                }
+            ],
+            "end": ";",
+            "endCaptures": {
+                "1": {
+                    "name": "punctuation.semicolon.cdl"
+                }
+            }
+        },
         "dimensions-section": {
             "name": "meta.dimensions.section.cdl",
             "begin": "(dimensions:)",
             "beginCaptures": {
                 "1": {
-                    "name": "constant.language.cdl"
+                    "name": "keyword.language.section.cdl"
                 }
             },
             "end": "(.*)(?=data:|variables:|types:|group:)",
@@ -135,29 +209,33 @@
             "begin": "\\s*(\\b[^\\d\\W]+[\\w_]+)",
             "beginCaptures": {
                 "1": {
-                    "name": "storage.modifier.dimension.cdl"
+                    "name": "entity.dimension.cdl"
                 }
             },
             "patterns": [
                 {
-                    "name": "punctuation.equals.cdl",
-                    "match": "="
+                    "include": "#equals"
                 },
                 {
-                    "name": "storage.type.numeric.cdl",
+                    "name": "constant.numeric.cdl",
                     "match": "\\d+"
                 },
                 {
                     "include": "#UNLIMITED"
                 }
             ],
-            "end": ";|,"
+            "end": ";|,",
+            "endCaptures": {
+                "1": {
+                    "name": "punctuation.semicolon.cdl"
+                }
+            }
         },
         "keywords": {
             "patterns": [
                 {
                     "match": "netcdf|variables:|dimensions:|types:|data:|group:",
-                    "name": "constant.language.cdl"
+                    "name": "keyword.language.section.cdl"
                 },
                 {
                     "match": "_FillValue|valid_range|units|long_name|_Shuffle|_Storage|_ChunkSizes|_Fletcher32|_Endianness|_DeflateLevel",
@@ -169,7 +247,23 @@
             "patterns": [
                 {
                     "match": "unlimited|UNLIMITED",
-                    "name": "constant.language.cdl"
+                    "name": "constant.numeric.cdl"
+                }
+            ]
+        },
+        "equals": {
+            "patterns": [
+                {
+                    "name": "punctuation.equals.cdl",
+                    "match": "="
+                }                
+            ]
+        },
+        "comma": {
+            "patterns": [
+                {
+                    "match": ",",
+                    "name": "punctuation.comma.cdl"
                 }
             ]
         },
