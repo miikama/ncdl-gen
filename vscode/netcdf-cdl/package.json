@@ -9,17 +9,8 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [
-    "onCommand:netcdf-cdl.helloWorld"
-  ],
   "main": "./out/extension.js",
   "contributes": {
-    "commands": [
-      {
-        "command": "netcdf-cdl.helloWorld",
-        "title": "Hello World"
-      }
-    ],
     "languages": [
       {
         "id": "NetCDF",
