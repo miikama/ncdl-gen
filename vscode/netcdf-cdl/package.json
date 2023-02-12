@@ -2,7 +2,12 @@
   "name": "netcdf-cdl",
   "displayName": "netcdf-cdl",
   "description": "NetCDF CDL language support",
-  "version": "0.0.1",
+  "version": "0.1.0",
+  "license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/miikama/ncdl-gen/tree/master/vscode/netcdf-cdl"
+	},
   "engines": {
     "vscode": "^1.74.0"
   },
