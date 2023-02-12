@@ -23,7 +23,13 @@
     "languages": [
       {
         "id": "NetCDF",
-        "extensions": [".cdl"]
+        "extensions": [
+          ".cdl"
+        ],
+        "aliases": [
+          "netcdf"
+        ],
+        "configuration": "./language-configuration.json"
       }
     ],
     "grammars": [
