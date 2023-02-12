@@ -17,7 +17,7 @@ Currently supported CDL grammar components
 
 An example highligting
 
-![example_highlighting](https://imgur.com/a/sjdDieK)
+![example_highlighting](example_theme.png)
 
 Can be achieved with the following user defined types in VSCode `settings.json`
 
