@@ -484,6 +484,15 @@ std::string Attribute::description(int indent) const
     return fmt::format("{}{}:{} = {}", type_part, name_part, m_attribute_name, as_string());
 }
 
+std::string Attribute::string_data() const
+{
+    if (std::holds_alternative<std::string>(m_value))
+    {
+        return std::get<std::string>(m_value);
+    }
+    return "";
+}
+
 std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFType> attribute_type)
 {
     // Allowed attribute grammar,
@@ -590,7 +599,8 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
             auto data = VariableData::parse(parser, type);
             if (!data)
             {
-                fmt::print("Parsing global attribute {} with type {} failed.\n", split_str.second, type.name());
+                fmt::print("Parsing global attribute {} with type {} failed.\n", split_str.second,
+                           type.name());
                 return {};
             }
             attr.m_value = *data;
@@ -989,6 +999,26 @@ std::vector<Variable>& Group::variables()
         return variables;
     }
     return m_variables->variables();
+}
+
+const std::vector<Attribute>& Group::attributes() const
+{
+    static std::vector<Attribute> attributes{};
+    if (!m_variables)
+    {
+        return attributes;
+    }
+    return m_variables->attributes();
+}
+
+std::vector<Attribute>& Group::attributes()
+{
+    static std::vector<Attribute> attributes{};
+    if (!m_variables)
+    {
+        return attributes;
+    }
+    return m_variables->attributes();
 }
 
 } // namespace ncdlgen

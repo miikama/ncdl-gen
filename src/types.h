@@ -225,6 +225,10 @@ class Attribute : public Element
     // Get string representation of the contained value
     std::string as_string() const;
 
+    std::optional<NetCDFType> type() { return m_type; }
+    const std::string_view name() const { return m_attribute_name; }
+    std::string string_data() const;
+
   private:
     std::optional<NetCDFType> m_type{};
     std::optional<std::string> m_variable_name{};
@@ -278,6 +282,8 @@ class Variables : public Element
 
     std::vector<Variable>& variables() { return m_variables; }
     const std::vector<Variable>& variables() const { return m_variables; }
+    std::vector<Attribute>& attributes() { return m_attributes; }
+    const std::vector<Attribute>& attributes() const { return m_attributes; }
 
   private:
     std::vector<Variable> m_variables{};
@@ -299,6 +305,8 @@ class Group : public Element
     const std::vector<ComplexType>& types() const { return m_types; }
     std::vector<Variable>& variables();
     const std::vector<Variable>& variables() const;
+    std::vector<Attribute>& attributes();
+    const std::vector<Attribute>& attributes() const;
     const std::vector<Group>& groups() const { return m_groups; };
     std::vector<Group>& groups() { return m_groups; };
 
