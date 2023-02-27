@@ -94,6 +94,37 @@ TEST(parser, types)
     EXPECT_EQ(types[2].name(), "combined");
 }
 
+TEST(parser, global_attributes)
+{
+    std::string input{"netcdf foo {\n"
+                      "   variables:\n"
+                      "      :untyped_global_attribute = \"global\";\n"
+                      "      int :globalatt = 1;\n"
+                      "}"};
+    auto input_tokens = tokens_from_string(input);
+
+    Parser parser{input_tokens};
+    auto result = parser.parse();
+    ASSERT_TRUE(result.has_value());
+
+    ASSERT_TRUE(result->group);
+    auto variables = result->group->variables();
+    ASSERT_EQ(variables.size(), 0);
+
+    auto attributes = result->group->attributes();
+    ASSERT_EQ(attributes.size(), 2);
+    EXPECT_EQ(attributes[0].name(), "untyped_global_attribute");
+    // Note: We give untyped attributes type of 'string'
+    EXPECT_TRUE(attributes[0].type().has_value());
+    EXPECT_EQ(attributes[0].type().value(), NetCDFElementaryType::String);
+    EXPECT_EQ(attributes[0].string_data(), std::string("\"global\""));
+
+    EXPECT_EQ(attributes[1].name(), "globalatt");
+    EXPECT_TRUE(attributes[1].type().has_value());
+    EXPECT_EQ(attributes[1].type().value(), NetCDFType(NetCDFElementaryType::Int));
+    EXPECT_EQ(attributes[1].string_data(), std::string(""));
+}
+
 TEST(types, opaque)
 {
     auto ref_type = OpaqueType("test_opaque", 1);
