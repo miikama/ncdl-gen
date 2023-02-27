@@ -568,18 +568,37 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
     }
     else if (is_global)
     {
-        auto data = VariableData::parse(parser, attr.m_type.value_or(NetCDFElementaryType::Default));
-        if (!data)
+        // untyped global attributes
+        if (!attr.m_type.has_value())
         {
-            fmt::print("Parsing global attribute {} with type {} failed.\n", split_str.second,
-                       attribute_type->name());
-            return {};
+            auto value = parser.pop();
+            if (!value || value->content().empty())
+            {
+                parser.log_parse_error("Could not parse value for untyped global attribute");
+                return {};
+            }
+            // Note: maybe untyped global attributes should not have a type
+            // It just seems that the content is 'typically' free string,
+            // so why not make the type string as well
+            attr.m_type = NetCDFElementaryType::String;
+            attr.m_value = std::string(value->content());
         }
-        attr.m_value = *data;
+        // typed global attributes
+        else
+        {
+            auto& type = attr.m_type.value();
+            auto data = VariableData::parse(parser, type);
+            if (!data)
+            {
+                fmt::print("Parsing global attribute {} with type {} failed.\n", split_str.second, type.name());
+                return {};
+            }
+            attr.m_value = *data;
+        }
     }
     else
     {
-        fmt::print("Unsupported attribute '{}'\n", attr.m_attribute_name);
+        parser.log_parse_error(fmt::format("Unsupported attribute '{}'\n", attr.m_attribute_name));
         return {};
     }
 
