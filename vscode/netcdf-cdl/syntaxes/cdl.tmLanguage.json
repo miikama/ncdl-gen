@@ -33,7 +33,7 @@
                     "name": "keyword.language.section.cdl"
                 }
             },
-            "end": "(.*)(?=dimensions:|data:|types:|group:)",
+            "end": "(.*)(?=(dimensions:|data:|types:|group:)([\\s;]*|(//.*))*\\n)",
             "patterns": [
                 {
                     "include": "#comment"
@@ -191,7 +191,7 @@
                     "name": "keyword.language.section.cdl"
                 }
             },
-            "end": "(.*)(?=data:|variables:|types:|group:)",
+            "end": "(.*)(?=(data:|variables:|types:|group:)([\\s;]*|(//.*))*\\n)",
             "patterns": [
                 {
                     "include": "#comment"
