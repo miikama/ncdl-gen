@@ -9,6 +9,9 @@
         "expression": {
             "patterns": [
                 {
+                    "include": "#root-group"
+                },
+                {
                     "include": "#variables-section"
                 },
                 {
@@ -27,6 +30,17 @@
                     "include": "#strings"
                 }
             ]
+        },
+        "root-group": {
+            "match": "(netcdf)\\s+(\\w+)",
+            "captures": {
+                "1": {
+                    "name": "keyword.language.section.cdl"
+                },
+                "2": {
+                    "name": "variable.dataset.name.cdl"
+                }
+            }
         },
         "variables-section": {
             "name": "meta.variable.section.cdl",
@@ -264,7 +278,7 @@
         "keywords": {
             "patterns": [
                 {
-                    "match": "netcdf|variables:|dimensions:|types:|data:|group:",
+                    "match": "variables:|dimensions:|types:|data:|group:",
                     "name": "keyword.language.section.cdl"
                 },
                 {
