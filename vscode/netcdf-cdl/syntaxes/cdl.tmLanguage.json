@@ -15,6 +15,9 @@
                     "include": "#dimensions-section"
                 },
                 {
+                    "include": "#group-section"
+                },
+                {
                     "include": "#comment"
                 },
                 {
@@ -231,6 +234,33 @@
                 }
             }
         },
+        "group-section": {
+            "name": "meta.group.section.cdl",
+            "begin": "(group:)\\s+(\\w+)",
+            "beginCaptures": {
+                "1": {
+                    "name": "keyword.language.section.cdl"
+                },
+                "2": {
+                    "name": "variable.group.name.cdl"
+                }
+            },
+            "end": "(.*)(?=(data:|variables:|types:|dimensions:)([\\s;]*|(//.*))*\\n)",
+            "patterns": [
+                {
+                    "include": "#variables-section"
+                },
+                {
+                    "include": "#dimensions-section"
+                },
+                {
+                    "include": "#comment"
+                },
+                {
+                    "include": "#strings"
+                }
+            ]
+        },
         "keywords": {
             "patterns": [
                 {
@@ -256,7 +286,7 @@
                 {
                     "name": "punctuation.equals.cdl",
                     "match": "="
-                }                
+                }
             ]
         },
         "comma": {
