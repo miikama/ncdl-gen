@@ -1,0 +1,10 @@
+netcdf foo {
+
+    dimensions:
+        dim = 5 ;
+
+    variables:
+        int bar ;
+        float baz ;
+        ushort bee(dim) ;
+}
