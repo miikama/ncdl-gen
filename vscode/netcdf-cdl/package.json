@@ -2,7 +2,7 @@
   "name": "netcdf-cdl",
   "displayName": "netcdf-cdl",
   "description": "NetCDF CDL language support",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "license": "MIT",
   "publisher": "miikama",
   "repository": {

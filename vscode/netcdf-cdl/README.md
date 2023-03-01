@@ -17,7 +17,7 @@ Currently supported CDL grammar components
 
 An example highligting
 
-![example_highlighting](example_theme.png)
+![example_highlighting](https://raw.githubusercontent.com/miikama/ncdl-gen/master/vscode/netcdf-cdl/example_theme.png)
 
 Can be achieved with the following user defined types in VSCode `settings.json`
 
@@ -109,6 +109,11 @@ Can be achieved with the following user defined types in VSCode `settings.json`
 
 
 ## Release Notes
+
+### 0.2.0
+
+- Support group and dataset name syntax highlighting
+- support language keywords inside variables and dimensions sections
 
 ### 0.1.0
 
