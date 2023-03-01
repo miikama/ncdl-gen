@@ -124,3 +124,40 @@ TEST(parser, global_attributes)
     EXPECT_EQ(attributes[1].type().value(), NetCDFType(NetCDFElementaryType::Int));
     EXPECT_EQ(attributes[1].string_data(), std::string(""));
 }
+
+TEST(parser, variables)
+{
+    std::string input{"netcdf foo {\n"
+                      "  dimensions:\n"
+                      "    dim = 5;\n"
+                      "  variables:\n"
+                      "    int bar; \n"
+                      "    float baz; \n"
+                      "    ushort bee(dim); \n"
+                      "}"};
+    auto input_tokens = tokens_from_string(input);
+
+    Parser parser{input_tokens};
+    auto result = parser.parse();
+    ASSERT_TRUE(result.has_value());
+
+    ASSERT_TRUE(result->group);
+    auto variables = result->group->variables();
+    ASSERT_EQ(variables.size(), 3);
+    EXPECT_EQ(variables[0].basic_type(), NetCDFElementaryType::Int);
+    EXPECT_EQ(variables[0].name(), "bar");
+    EXPECT_EQ(variables[0].dimensions().size(), 0);
+    EXPECT_EQ(variables[1].basic_type(), NetCDFElementaryType::Float);
+    EXPECT_EQ(variables[1].name(), "baz");
+    EXPECT_EQ(variables[1].dimensions().size(), 0);
+    EXPECT_EQ(variables[2].basic_type(), NetCDFElementaryType::Ushort);
+    EXPECT_EQ(variables[2].name(), "bee");
+    ASSERT_EQ(variables[2].dimensions().size(), 1);
+    // TODO: the variable dimensions are not actually mapped to actual dimensions
+    EXPECT_EQ(variables[2].dimensions()[0].name(), "dim");
+
+    auto dimensions = result->group->dimensions();
+    ASSERT_EQ(dimensions.size(), 1);
+    EXPECT_EQ(dimensions[0].length, 5);
+    EXPECT_EQ(dimensions[0].name, "dim");
+}

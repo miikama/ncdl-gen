@@ -1021,4 +1021,24 @@ std::vector<Attribute>& Group::attributes()
     return m_variables->attributes();
 }
 
+const std::vector<Dimension>& Group::dimensions() const
+{
+    static std::vector<Dimension> dimensions{};
+    if (!m_dimensions)
+    {
+        return dimensions;
+    }
+    return m_dimensions->dimensions;
+}
+
+std::vector<Dimension>& Group::dimensions()
+{
+    static std::vector<Dimension> dimensions{};
+    if (!m_dimensions)
+    {
+        return dimensions;
+    }
+    return m_dimensions->dimensions;
+}
+
 } // namespace ncdlgen

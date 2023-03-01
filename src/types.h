@@ -257,6 +257,7 @@ class Variable : public Element
 
     NetCDFType type() const { return m_type; }
     NetCDFElementaryType basic_type() const;
+    std::vector<VariableDimension> dimensions() { return m_dimensions; };
 
   private:
     std::optional<VariableData> m_value;
@@ -307,6 +308,8 @@ class Group : public Element
     const std::vector<Variable>& variables() const;
     std::vector<Attribute>& attributes();
     const std::vector<Attribute>& attributes() const;
+    const std::vector<Dimension>& dimensions() const;
+    std::vector<Dimension>& dimensions();
     const std::vector<Group>& groups() const { return m_groups; };
     std::vector<Group>& groups() { return m_groups; };
 
