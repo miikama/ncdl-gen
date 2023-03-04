@@ -44,6 +44,23 @@ class NetCDFInterface
     Path resolve_path(const std::string_view path);
 
     /**
+     * Container for all the variable related fields
+     *
+     *  In the NetCDF representation, i.e. with id fields, not
+     *  human readable fields.
+     */
+    struct VariableInfo
+    {
+        int32_t group_id{-1};
+        int32_t variable_id{-1};
+        std::vector<int32_t> dimension_ids{};
+        std::vector<std::size_t> dimension_sizes{};
+        int32_t nc_type{};
+    };
+
+    VariableInfo get_variable_info(const Path& path);
+
+    /**
      * Main inteface for writing data to netcdf
      */
     template <typename T> void write(const std::string_view full_path, const T& data)
@@ -97,6 +114,7 @@ class NetCDFInterface
 
     int get_group_id(const int parent_group_id, const std::string_view variable_name);
     int get_variable_id(const int group_id, std::string_view path);
+    std::size_t get_dimension_size(const Path& path);
 
     std::filesystem::path path{};
     int root_id{-1};
