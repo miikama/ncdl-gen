@@ -1,11 +1,81 @@
 
 #pragma once
 
+#include <filesystem>
 #include <string_view>
 
+#include "netcdf.h"
+
+#include "utils.h"
+
+namespace ncdlgen
+{
+
+/**
+ * Write and read data from netcdf.
+ *
+ * Currently support situation where the netcdf structure is defined in a cdl file
+ * and an empty netcdf file is created by ncgen.
+ *
+ * Now we do not have to define all the dimensions for the variables
+ */
 class NetCDFInterface
 {
   public:
-    template <typename T> void write(std::string_view path, const T& data) {}
+    NetCDFInterface(std::string_view file_path) : path(file_path) {}
+
+    virtual ~NetCDFInterface() = default;
+
+    void open();
+    void close();
+
+    struct Path
+    {
+        int group_id{};
+        int variable_id{};
+    };
+
+    /**
+     * Resolve path e.g. /group/variable
+     *
+     * Get the parent group id and variable id
+     */
+    Path resolve_path(const std::string_view path);
+
+    /**
+     * Main inteface for writing data to netcdf
+     */
+    template <typename T> void write(const std::string_view full_path, const T& data)
+    {
+        auto path = resolve_path(full_path);
+
+        if constexpr (std::is_arithmetic_v<T>)
+        {
+            if (auto ret = nc_put_var(path.group_id, path.variable_id, &data))
+            {
+                throw_error("nc_put_var", ret);
+            }
+        }
+        else
+        {
+            static_assert(always_false_v<T>, "Unsupported type for writing to NetCDF");
+        }
+    }
+
+    /**
+     * Main inteface for reading data from netcdf
+     */
     template <typename T> T read(std::string_view path) { return T{}; }
+
+  private:
+    void assert_open();
+    void throw_error(std::string_view message, int error_code);
+
+    int get_group_id(const int parent_group_id, const std::string_view variable_name);
+    int get_variable_id(const int group_id, std::string_view path);
+
+    std::filesystem::path path{};
+    int root_id{-1};
 };
+
+} // namespace ncdlgen
