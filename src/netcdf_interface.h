@@ -5,6 +5,7 @@
 #include <string_view>
 
 #include "netcdf.h"
+#include <fmt/core.h>
 
 #include "utils.h"
 
@@ -49,11 +50,13 @@ class NetCDFInterface
     {
         auto path = resolve_path(full_path);
 
+        // TODO: Make sure resolved variable type and dimensions match
+
         if constexpr (std::is_arithmetic_v<T>)
         {
             if (auto ret = nc_put_var(path.group_id, path.variable_id, &data))
             {
-                throw_error("nc_put_var", ret);
+                throw_error(fmt::format("nc_put_var ({})", full_path), ret);
             }
         }
         else
@@ -65,7 +68,28 @@ class NetCDFInterface
     /**
      * Main inteface for reading data from netcdf
      */
-    template <typename T> T read(std::string_view path) { return T{}; }
+    template <typename T> T read(const std::string_view full_path)
+    {
+        auto path = resolve_path(full_path);
+
+        T data;
+
+        // TODO: Make sure resolved variable type and dimensions match
+
+        if constexpr (std::is_arithmetic_v<T>)
+        {
+            if (auto ret = nc_get_var(path.group_id, path.variable_id, &data))
+            {
+                throw_error(fmt::format("nc_get_var ({})", full_path), ret);
+            }
+        }
+        else
+        {
+            static_assert(always_false_v<T>, "Unsupported type for writing to NetCDF");
+        }
+
+        return data;
+    }
 
   private:
     void assert_open();
