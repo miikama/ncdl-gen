@@ -1,10 +1,13 @@
-netcdf foo {
+netcdf simple {
 
-    dimensions:
-        dim = 5 ;
+    group: foo {
 
-    variables:
-        int bar ;
-        float baz ;
-        ushort bee(dim) ;
+        dimensions:
+            dim = 5 ;
+
+        variables:
+            int bar ;
+            float baz ;
+            ushort bee(dim) ;
+    }
 }
