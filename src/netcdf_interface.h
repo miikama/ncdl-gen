@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <cassert>
 #include <filesystem>
 #include <string_view>
 
@@ -76,6 +77,18 @@ class NetCDFInterface
                 throw_error(fmt::format("nc_put_var ({})", full_path), ret);
             }
         }
+        // 1D container
+        else if constexpr (std::is_arithmetic_v<typename T::value_type>)
+        {
+            std::array<std::size_t, 1> start{0};
+            std::array<std::size_t, 1> count{data.size()};
+
+            if (auto ret =
+                    nc_put_vara(path.group_id, path.variable_id, start.data(), count.data(), data.data()))
+            {
+                throw_error(fmt::format("nc_put_var ({})", full_path), ret);
+            }
+        }
         else
         {
             static_assert(always_false_v<T>, "Unsupported type for writing to NetCDF");
@@ -91,6 +104,9 @@ class NetCDFInterface
 
         T data;
 
+        // Get all information about the variable
+        auto variable_info = get_variable_info(path);
+
         // TODO: Make sure resolved variable type and dimensions match
 
         if constexpr (std::is_arithmetic_v<T>)
@@ -98,6 +114,21 @@ class NetCDFInterface
             if (auto ret = nc_get_var(path.group_id, path.variable_id, &data))
             {
                 throw_error(fmt::format("nc_get_var ({})", full_path), ret);
+            }
+        }
+        else if constexpr (std::is_arithmetic_v<typename T::value_type>)
+        {
+            assert(variable_info.dimension_sizes.size() == 1);
+            std::array<std::size_t, 1> start{0};
+            std::array<std::size_t, 1> count{variable_info.dimension_sizes.at(0)};
+
+            // NOTE: ND container resizing needs a separate interface
+            data.resize(count.front());
+
+            if (auto ret =
+                    nc_get_vara(path.group_id, path.variable_id, start.data(), count.data(), data.data()))
+            {
+                throw_error(fmt::format("nc_get_vara ({})", full_path), ret);
             }
         }
         else

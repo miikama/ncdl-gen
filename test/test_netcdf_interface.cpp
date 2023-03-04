@@ -9,7 +9,7 @@ using namespace ncdlgen;
 TEST(interface, netcdf)
 {
 
-    foo data{.bar = 5, .baz = 32};
+    foo data{.bar = 5, .baz = 32, .bee = {1, 2, 3, 4, 5}};
 
     // TODO: we just assume the location of the test directory
     auto ret = system("cp ../test/simple.nc .");
