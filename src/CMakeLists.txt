@@ -8,6 +8,7 @@ set(SOURCES
     syntax.cpp
     utils.cpp
     equality.cpp
+    netcdf_interface.cpp
     wrappers/foo_wrapper.cpp
 )
 
@@ -18,7 +19,7 @@ target_include_directories(ncdlgen PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/wrappers)
 target_compile_features(ncdlgen PUBLIC cxx_std_17)
 
 # NOTE: when installing fmt through conan, the target is 'fmt' instead of 'fmt::fmt'
-target_link_libraries(ncdlgen PRIVATE fmt)
+target_link_libraries(ncdlgen PUBLIC ${CONAN_LIBS})
 
 add_executable(parser main.cpp)
 

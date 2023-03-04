@@ -1,6 +1,7 @@
 [requires]
  fmt/9.1.0
  gtest/1.10.0
+ netcdf/4.8.1
 
 [generators]
  cmake
