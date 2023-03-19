@@ -4,7 +4,7 @@
 #include "stdint.h"
 #include <vector>
 
-#include "netcdf_interface.h"
+#include "forward.h"
 #include "utils.h"
 
 namespace ncdlgen

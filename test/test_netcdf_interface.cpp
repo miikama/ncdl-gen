@@ -9,6 +9,7 @@
 
 #include "foo_wrapper.h"
 #include "netcdf_interface.h"
+#include "vector_interface.h"
 
 using namespace ncdlgen;
 

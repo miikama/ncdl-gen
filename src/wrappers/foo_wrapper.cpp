@@ -1,5 +1,9 @@
 
 #include "foo_wrapper.h"
+#include "vector_interface.h"
+// NOTE: the vector interface has to be included before the netcdf interface
+//       to provide the definitions for resize
+#include "netcdf_interface.h"
 
 namespace ncdlgen
 {

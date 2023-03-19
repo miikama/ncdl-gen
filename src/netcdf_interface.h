@@ -8,7 +8,7 @@
 #include "netcdf.h"
 #include <fmt/core.h>
 
-#include "interface_support.h"
+#include "interface.h"
 #include "utils.h"
 
 namespace ncdlgen
@@ -125,8 +125,7 @@ class NetCDFInterface
             std::array<std::size_t, 1> start{0};
             std::array<std::size_t, 1> count{variable_info.dimension_sizes.at(0)};
 
-            // NOTE: ND container resizing needs a separate interface
-            data.resize(count.front());
+            interface::resize<ElementType>(data, variable_info.dimension_sizes);
 
             if (auto ret =
                     nc_get_vara(path.group_id, path.variable_id, start.data(), count.data(), data.data()))
