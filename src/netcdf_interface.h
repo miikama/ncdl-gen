@@ -8,6 +8,7 @@
 #include "netcdf.h"
 #include <fmt/core.h>
 
+#include "interface_support.h"
 #include "utils.h"
 
 namespace ncdlgen
@@ -78,7 +79,7 @@ class NetCDFInterface
             }
         }
         // 1D container
-        else if constexpr (std::is_arithmetic_v<typename T::value_type>)
+        else if constexpr (is_supported_ndarray_v<T>)
         {
             std::array<std::size_t, 1> start{0};
             std::array<std::size_t, 1> count{data.size()};
@@ -116,7 +117,7 @@ class NetCDFInterface
                 throw_error(fmt::format("nc_get_var ({})", full_path), ret);
             }
         }
-        else if constexpr (std::is_arithmetic_v<typename T::value_type>)
+        else if constexpr (is_supported_ndarray_v<T>)
         {
             assert(variable_info.dimension_sizes.size() == 1);
             std::array<std::size_t, 1> start{0};

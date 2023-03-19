@@ -51,3 +51,66 @@ TEST(interface, netcdf)
     EXPECT_EQ(data.baz, read_data.baz);
     EXPECT_EQ(data.bee, read_data.bee);
 }
+
+template <typename ElementType, std::size_t DimensionCount> struct vector_ND
+{
+    vector_ND(const std::array<std::size_t, DimensionCount>& dimension_sizes)
+    {
+        std::size_t number_of_elements = dimension_sizes.size() > 0 ? 1 : 0;
+        for (auto& size : dimension_sizes)
+        {
+            number_of_elements *= size;
+        }
+        m_data.resize(number_of_elements, {});
+    }
+    void resize(const std::array<std::size_t, DimensionCount>& size) {}
+    std::size_t size() const { return m_data.size(); }
+
+    ElementType* data() { return this->m_data.data(); }
+    const ElementType* data() const { return this->m_data.data(); }
+
+    std::vector<ElementType> m_data{};
+};
+
+template <typename T> using Container1D = vector_ND<T, 1>;
+template <typename T> using Container2D = vector_ND<T, 2>;
+
+// setup support for our new ND container
+namespace ncdlgen
+{
+template <typename ContainerType>
+struct is_supported_ndarray<
+    ContainerType, std::enable_if_t<std::is_same_v<
+                       vector_ND<std::decay_t<decltype(*ContainerType({1}).data())>, 1>, ContainerType>>>
+    : public std::true_type
+{
+};
+} // namespace ncdlgen
+
+TEST(interface, write_ND)
+{
+    // Write data in VectorND format to the file
+    NetCDFInterface interface{"simple.nc"};
+    interface.open();
+
+    vector_ND<uint16_t, 1> data{{5}};
+    *data.data() = 1;
+    *(data.data() + 1) = 2;
+    *(data.data() + 2) = 3;
+    *(data.data() + 3) = 66;
+    *(data.data() + 4) = 5;
+
+    interface.write("/foo/bee", data);
+
+    // Read data using already existing interface to make sure
+    // writing went ok.
+    auto foo = read<ncdlgen::foo>(interface);
+    interface.close();
+
+    ASSERT_EQ(foo.bee.size(), 5);
+    EXPECT_EQ(foo.bee[0], 1);
+    EXPECT_EQ(foo.bee[1], 2);
+    EXPECT_EQ(foo.bee[2], 3);
+    EXPECT_EQ(foo.bee[3], 66);
+    EXPECT_EQ(foo.bee[4], 5);
+}
