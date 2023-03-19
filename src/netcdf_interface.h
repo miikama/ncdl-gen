@@ -65,13 +65,14 @@ class NetCDFInterface
     /**
      * Main inteface for writing data to netcdf
      */
-    template <typename T> void write(const std::string_view full_path, const T& data)
+    template <typename ContainerType, typename ElementType>
+    void write(const std::string_view full_path, const ContainerType& data)
     {
         auto path = resolve_path(full_path);
 
         // TODO: Make sure resolved variable type and dimensions match
 
-        if constexpr (std::is_arithmetic_v<T>)
+        if constexpr (std::is_arithmetic_v<ContainerType>)
         {
             if (auto ret = nc_put_var(path.group_id, path.variable_id, &data))
             {
@@ -79,7 +80,7 @@ class NetCDFInterface
             }
         }
         // 1D container
-        else if constexpr (is_supported_ndarray_v<T>)
+        else if constexpr (is_supported_ndarray_v<ElementType, ContainerType>)
         {
             std::array<std::size_t, 1> start{0};
             std::array<std::size_t, 1> count{data.size()};
@@ -92,32 +93,33 @@ class NetCDFInterface
         }
         else
         {
-            static_assert(always_false_v<T>, "Unsupported type for writing to NetCDF");
+            static_assert(always_false_v<ContainerType>, "Unsupported type for writing to NetCDF");
         }
     }
 
     /**
      * Main inteface for reading data from netcdf
      */
-    template <typename T> T read(const std::string_view full_path)
+    template <typename ContainerType, typename ElementType>
+    ContainerType read(const std::string_view full_path)
     {
         auto path = resolve_path(full_path);
 
-        T data;
+        ContainerType data;
 
         // Get all information about the variable
         auto variable_info = get_variable_info(path);
 
         // TODO: Make sure resolved variable type and dimensions match
 
-        if constexpr (std::is_arithmetic_v<T>)
+        if constexpr (std::is_arithmetic_v<ContainerType>)
         {
             if (auto ret = nc_get_var(path.group_id, path.variable_id, &data))
             {
                 throw_error(fmt::format("nc_get_var ({})", full_path), ret);
             }
         }
-        else if constexpr (is_supported_ndarray_v<T>)
+        else if constexpr (is_supported_ndarray_v<ElementType, ContainerType>)
         {
             assert(variable_info.dimension_sizes.size() == 1);
             std::array<std::size_t, 1> start{0};
@@ -134,7 +136,7 @@ class NetCDFInterface
         }
         else
         {
-            static_assert(always_false_v<T>, "Unsupported type for writing to NetCDF");
+            static_assert(always_false_v<ContainerType>, "Unsupported type for writing to NetCDF");
         }
 
         return data;

@@ -78,13 +78,9 @@ template <typename T> using Container2D = vector_ND<T, 2>;
 // setup support for our new ND container
 namespace ncdlgen
 {
-template <typename ContainerType>
-struct is_supported_ndarray<
-    ContainerType, std::enable_if_t<std::is_same_v<
-                       vector_ND<std::decay_t<decltype(*ContainerType({1}).data())>, 1>, ContainerType>>>
-    : public std::true_type
-{
-};
+template <typename ElementType>
+constexpr std::true_type is_supported_ndarray<ElementType, vector_ND<ElementType, 1>>;
+
 } // namespace ncdlgen
 
 TEST(interface, write_ND)
@@ -100,7 +96,7 @@ TEST(interface, write_ND)
     *(data.data() + 3) = 66;
     *(data.data() + 4) = 5;
 
-    interface.write("/foo/bee", data);
+    interface.write<vector_ND<uint16_t, 1>, uint16_t>("/foo/bee", data);
 
     // Read data using already existing interface to make sure
     // writing went ok.
