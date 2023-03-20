@@ -70,6 +70,9 @@ class NetCDFInterface
     {
         auto path = resolve_path(full_path);
 
+        // Get all information about the variable
+        auto variable_info = get_variable_info(path);
+
         // TODO: Make sure resolved variable type and dimensions match
 
         if constexpr (std::is_arithmetic_v<ContainerType>)
@@ -82,8 +85,8 @@ class NetCDFInterface
         // 1D container
         else if constexpr (is_supported_ndarray_v<ElementType, ContainerType>)
         {
-            std::array<std::size_t, 1> start{0};
-            std::array<std::size_t, 1> count{data.size()};
+            std::vector<std::size_t> count = variable_info.dimension_sizes;
+            std::vector<std::size_t> start(count.size(), 0);
 
             if (auto ret =
                     nc_put_vara(path.group_id, path.variable_id, start.data(), count.data(), data.data()))
@@ -121,9 +124,8 @@ class NetCDFInterface
         }
         else if constexpr (is_supported_ndarray_v<ElementType, ContainerType>)
         {
-            assert(variable_info.dimension_sizes.size() == 1);
-            std::array<std::size_t, 1> start{0};
-            std::array<std::size_t, 1> count{variable_info.dimension_sizes.at(0)};
+            std::vector<std::size_t> count = variable_info.dimension_sizes;
+            std::vector<std::size_t> start(count.size(), 0);
 
             interface::resize<ElementType>(data, variable_info.dimension_sizes);
 

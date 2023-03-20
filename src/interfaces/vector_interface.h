@@ -14,6 +14,11 @@ constexpr std::true_type is_supported_ndarray<ElementType, std::vector<ElementTy
 namespace interface
 {
 
+template <typename ElementType> constexpr std::size_t element_count(const std::vector<ElementType>& data)
+{
+    return data.size();
+}
+
 template <typename ElementType>
 void resize(std::vector<ElementType>& data, const std::vector<std::size_t>& dimension_sizes)
 {

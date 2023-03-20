@@ -18,6 +18,15 @@ namespace interface
 {
 
 template <typename ElementType, typename ContainerType>
+constexpr std::size_t element_count(const ContainerType& data)
+{
+    auto func = [](int a) { return 0; };
+    func(data);
+    static_assert(always_false_v<ContainerType>, "The element_count interface not implemented.");
+    return 0;
+}
+
+template <typename ElementType, typename ContainerType>
 void resize(ContainerType& data, const std::vector<std::size_t>& dimension_sizes)
 {
     auto func = [](int a) { return 0; };
