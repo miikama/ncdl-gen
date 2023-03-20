@@ -7,30 +7,33 @@
 namespace ncdlgen
 {
 
-// 1D stl vector are supported
-template <typename ElementType>
-constexpr std::true_type is_supported_ndarray<ElementType, std::vector<ElementType>>;
-
-namespace interface
+struct VectorInterface
 {
-
-template <typename ElementType> constexpr std::size_t element_count(const std::vector<ElementType>& data)
-{
-    return data.size();
-}
-
-template <typename ElementType>
-void resize(std::vector<ElementType>& data, const std::vector<std::size_t>& dimension_sizes)
-{
-    std::size_t number_of_elements{1};
-    for (auto& dimension_size : dimension_sizes)
+    // 1D stl vector are supported
+    template <typename ElementType>
+    static constexpr bool is_supported_ndarray(const std::vector<ElementType>&)
     {
-        number_of_elements *= dimension_size;
+        return true;
+    };
+
+    template <typename ElementType>
+    static constexpr std::size_t element_count(const std::vector<ElementType>& data)
+    {
+        return data.size();
     }
 
-    data.resize(number_of_elements);
-}
+    template <typename ElementType>
+    static constexpr void resize(std::vector<ElementType>& data,
+                                 const std::vector<std::size_t>& dimension_sizes)
+    {
+        std::size_t number_of_elements{1};
+        for (auto& dimension_size : dimension_sizes)
+        {
+            number_of_elements *= dimension_size;
+        }
 
-} // namespace interface
+        data.resize(number_of_elements);
+    }
+};
 
 } // namespace ncdlgen

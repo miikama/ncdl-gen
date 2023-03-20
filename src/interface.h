@@ -8,32 +8,26 @@
 namespace ncdlgen
 {
 
-template <typename ElementType, typename ContainerType> constexpr std::false_type is_supported_ndarray;
-
-// Define a _v helper
-template <typename ElementType, typename ContainerType>
-inline constexpr bool is_supported_ndarray_v = is_supported_ndarray<ElementType, ContainerType>();
-
-namespace interface
+struct Interface
 {
+    template <typename ElementType, typename ContainerType>
+    static constexpr bool is_supported_ndarray(const ContainerType&)
+    {
+        return false;
+    };
 
-template <typename ElementType, typename ContainerType>
-constexpr std::size_t element_count(const ContainerType& data)
-{
-    auto func = [](int a) { return 0; };
-    func(data);
-    static_assert(always_false_v<ContainerType>, "The element_count interface not implemented.");
-    return 0;
-}
+    template <typename ElementType, typename ContainerType>
+    static constexpr std::size_t element_count(const ContainerType& data)
+    {
+        static_assert(always_false_v<ContainerType>, "The element_count interface not implemented.");
+        return 0;
+    }
 
-template <typename ElementType, typename ContainerType>
-void resize(ContainerType& data, const std::vector<std::size_t>& dimension_sizes)
-{
-    auto func = [](int a) { return 0; };
-    func(data);
-    static_assert(always_false_v<ContainerType>, "The resize interface not implemented.");
-}
-
-} // namespace interface
+    template <typename ElementType, typename ContainerType>
+    static void resize(ContainerType& data, const std::vector<std::size_t>& dimension_sizes)
+    {
+        static_assert(always_false_v<ContainerType>, "The resize interface not implemented.");
+    }
+};
 
 } // namespace ncdlgen

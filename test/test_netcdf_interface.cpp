@@ -8,56 +8,8 @@
 #include <gtest/gtest.h>
 
 #include "foo_wrapper.h"
-#include "vector_interface.h"
-
-/**
- * Make a custom vector ND reference to try supporting custom container
- * types
- */
-template <typename ElementType, std::size_t DimensionCount> struct vector_ND
-{
-    vector_ND(const std::array<std::size_t, DimensionCount>& dimension_sizes)
-    {
-        std::size_t number_of_elements = dimension_sizes.size() > 0 ? 1 : 0;
-        for (auto& size : dimension_sizes)
-        {
-            number_of_elements *= size;
-        }
-        m_data.resize(number_of_elements, {});
-    }
-    void resize(const std::array<std::size_t, DimensionCount>& size) {}
-    std::size_t size() const { return m_data.size(); }
-
-    ElementType* data() { return this->m_data.data(); }
-    const ElementType* data() const { return this->m_data.data(); }
-
-    std::vector<ElementType> m_data{};
-};
-
-template <typename T> using Container1D = vector_ND<T, 1>;
-template <typename T> using Container2D = vector_ND<T, 2>;
-
-// setup support for our new ND container
-namespace ncdlgen
-{
-template <typename ElementType>
-constexpr std::true_type is_supported_ndarray<ElementType, vector_ND<ElementType, 1>>;
-
-namespace interface
-{
-
-template <typename ElementType> constexpr std::size_t element_count(const vector_ND<ElementType, 1>& data)
-{
-    return data.size();
-}
-
-} // namespace interface
-
-} // namespace ncdlgen
-
-// NOTE: the vector_ND has to be defined before the netcdf interface
-//       to provide the definitions for resize
 #include "netcdf_interface.h"
+#include "vector_interface.h"
 
 using namespace ncdlgen;
 
@@ -119,14 +71,62 @@ TEST(interface, netcdf_ndarray)
     interface.open();
 
     std::vector<double> data{1, 1, 1, 2, 2, 2};
-    interface.write<std::vector<double>, double>("/foo/bar", data);
+    interface.write<std::vector<double>, double, VectorInterface>("/foo/bar", data);
 
-    auto read_data = interface.read<std::vector<double>, double>("/foo/bar");
+    auto read_data = interface.read<std::vector<double>, double, VectorInterface>("/foo/bar");
 
     interface.close();
 
     ASSERT_EQ(read_data.size(), 6);
 }
+
+/**
+ * Make a custom vector ND reference to try supporting custom container
+ * types
+ */
+template <typename ElementType, std::size_t DimensionCount> struct vector_ND
+{
+    vector_ND(const std::array<std::size_t, DimensionCount>& dimension_sizes)
+    {
+        std::size_t number_of_elements = dimension_sizes.size() > 0 ? 1 : 0;
+        for (auto& size : dimension_sizes)
+        {
+            number_of_elements *= size;
+        }
+        m_data.resize(number_of_elements, {});
+    }
+    void resize(const std::array<std::size_t, DimensionCount>& size) {}
+    std::size_t size() const { return m_data.size(); }
+
+    ElementType* data() { return this->m_data.data(); }
+    const ElementType* data() const { return this->m_data.data(); }
+
+    std::vector<ElementType> m_data{};
+};
+
+struct VectorNDInterface
+{
+    // 1D stl vector are supported
+    template <typename ElementType>
+    static constexpr bool is_supported_ndarray(const vector_ND<ElementType, 1>&)
+    {
+        return true;
+    };
+
+    template <typename ElementType>
+    static constexpr std::size_t element_count(const vector_ND<ElementType, 1>& data)
+    {
+        return data.size();
+    }
+
+    template <typename ElementType>
+    static constexpr void resize(vector_ND<ElementType, 1>& data,
+                                 const std::vector<std::size_t>& dimension_sizes)
+    {
+        assert(dimension_sizes.size() == 1);
+        data.resize(dimension_sizes);
+    }
+};
 
 TEST(interface, write_ND)
 {
@@ -141,7 +141,7 @@ TEST(interface, write_ND)
     *(data.data() + 3) = 66;
     *(data.data() + 4) = 5;
 
-    interface.write<vector_ND<uint16_t, 1>, uint16_t>("/foo/bee", data);
+    interface.write<vector_ND<uint16_t, 1>, uint16_t, VectorNDInterface>("/foo/bee", data);
 
     // Read data using already existing interface to make sure
     // writing went ok.

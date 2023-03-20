@@ -8,8 +8,8 @@
 #include "netcdf.h"
 #include <fmt/core.h>
 
-#include "interface.h"
 #include "utils.h"
+#include "vector_interface.h"
 
 namespace ncdlgen
 {
@@ -65,7 +65,7 @@ class NetCDFInterface
     /**
      * Main inteface for writing data to netcdf
      */
-    template <typename ContainerType, typename ElementType>
+    template <typename ContainerType, typename ElementType, typename ContainerInterface>
     void write(const std::string_view full_path, const ContainerType& data)
     {
         auto path = resolve_path(full_path);
@@ -83,7 +83,7 @@ class NetCDFInterface
             }
         }
         // 1D container
-        else if constexpr (is_supported_ndarray_v<ElementType, ContainerType>)
+        else if constexpr (ContainerInterface::is_supported_ndarray(data))
         {
             std::vector<std::size_t> count = variable_info.dimension_sizes;
             std::vector<std::size_t> start(count.size(), 0);
@@ -103,7 +103,7 @@ class NetCDFInterface
     /**
      * Main inteface for reading data from netcdf
      */
-    template <typename ContainerType, typename ElementType>
+    template <typename ContainerType, typename ElementType, typename ContainerInterface>
     ContainerType read(const std::string_view full_path)
     {
         auto path = resolve_path(full_path);
@@ -122,12 +122,14 @@ class NetCDFInterface
                 throw_error(fmt::format("nc_get_var ({})", full_path), ret);
             }
         }
-        else if constexpr (is_supported_ndarray_v<ElementType, ContainerType>)
+        else if constexpr (ContainerInterface::is_supported_ndarray(data))
         {
             std::vector<std::size_t> count = variable_info.dimension_sizes;
             std::vector<std::size_t> start(count.size(), 0);
 
-            interface::resize<ElementType>(data, variable_info.dimension_sizes);
+            // see https://stackoverflow.com/a/613132
+            // Let the compiler know that resize is a template
+            ContainerInterface::template resize<ElementType>(data, variable_info.dimension_sizes);
 
             if (auto ret =
                     nc_get_vara(path.group_id, path.variable_id, start.data(), count.data(), data.data()))
