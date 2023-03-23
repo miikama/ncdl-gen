@@ -226,15 +226,13 @@ std::string Dimension::description(int indent) const
 
 std::string RootGroup::description(int indent) const
 {
-    Description description(indent);
-    description << "RootGroup";
     if (group)
     {
         Description group_description(indent, false);
-        group_description << group->description(indent + 1);
-        return description.description + group_description.description;
+        group_description << group->description(indent);
+        return group_description.description;
     }
-    return description.description;
+    return "";
 }
 
 void RootGroup::print_tree() { fmt::print(description(0)); }
