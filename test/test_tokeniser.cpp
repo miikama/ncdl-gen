@@ -3,7 +3,6 @@
 #include <string>
 
 #include <gtest/gtest.h>
-#include <fmt/core.h>
 
 #include "tokeniser.h"
 
@@ -88,8 +87,9 @@ TEST(tokeniser, dimensions)
 
     std::string input{cdl};
     std::vector<std::string> expected_tokens{
-        "netcdf", "foo",       "{", "dimensions:", "lat", "=", "10", ",",    "lon", "=",         "5", ",", "time",
-        "=",      "unlimited", ";", "dim2",        "=",   "2", ";",  "dim3", "=",   "UNLIMITED", ";", "}",
+        "netcdf", "foo", "{",    "dimensions:", "lat",       "=",         "10", ",",    "lon",
+        "=",      "5",   ",",    "time",        "=",         "unlimited", ";",  "dim2", "=",
+        "2",      ";",   "dim3", "=",           "UNLIMITED", ";",         "}",
 
     };
 
@@ -257,7 +257,6 @@ TEST(tokeniser, groups)
     check_tokeniser(input, expected_tokens);
 }
 
-
 TEST(tokeniser, source_locations)
 {
 
@@ -285,5 +284,4 @@ TEST(tokeniser, source_locations)
     EXPECT_EQ(tokens[4].source_location.line, 3);
     // column numbers also include the whitespace
     EXPECT_EQ(tokens[4].source_location.column, 7);
-
 }

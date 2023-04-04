@@ -34,6 +34,8 @@ class Tokeniser
     std::optional<char> peek() const;
     std::optional<char> pop();
 
+    static void print_tokens(const std::vector<Token>& tokens);
+
   private:
     void pick_comment();
     void pick_string();

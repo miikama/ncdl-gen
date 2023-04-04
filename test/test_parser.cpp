@@ -11,14 +11,6 @@
 
 using namespace ncdlgen;
 
-static void print_tokens(const std::vector<Token>& tokens)
-{
-    for (auto& token : tokens)
-    {
-        fmt::print("{}\n", token.content());
-    }
-}
-
 static std::vector<Token> tokens_from_string(const std::string& input_string)
 {
     Tokeniser tokeniser{input_string};

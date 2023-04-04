@@ -1,4 +1,5 @@
 
+#include <fmt/core.h>
 #include <iostream>
 
 #include "tokeniser.h"
@@ -152,6 +153,14 @@ std::optional<char> Tokeniser::pop()
         m_column++;
     }
     return m_input[m_cursor++];
+}
+
+void Tokeniser::print_tokens(const std::vector<Token>& tokens)
+{
+    for (auto& token : tokens)
+    {
+        fmt::print("{}\n", token.content());
+    }
 }
 
 } // namespace ncdlgen
