@@ -257,7 +257,7 @@ class Variable : public Element
 
     NetCDFType type() const { return m_type; }
     NetCDFElementaryType basic_type() const;
-    std::vector<VariableDimension> dimensions() { return m_dimensions; };
+    const std::vector<VariableDimension>& dimensions() const { return m_dimensions; };
 
   private:
     std::optional<VariableData> m_value;
