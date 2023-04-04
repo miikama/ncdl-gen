@@ -1,39 +1,29 @@
 
 #include <iostream>
-#include <fstream>
-#include <sstream>
 
-#include "tokeniser.h"
 #include "parser.h"
+#include "tokeniser.h"
+#include "utils.h"
 
 void parse_file(const std::string& filename)
 {
-    std::ifstream istream { filename};
 
-    std::stringstream sstream {};
-    if(istream.is_open())
-    {
-        std::string line {};
-        while(getline(istream, line))
-        {
-            sstream << line << "\n";
-        }
-    }
-    auto input = sstream.str();
+    auto input = ncdlgen::read_file(filename);
 
     ncdlgen::Tokeniser tokeniser{input};
     auto tokens = tokeniser.tokenise();
 
-    ncdlgen::Parser parser {tokens};
+    ncdlgen::Parser parser{tokens};
     auto ast = parser.parse();
     std::cout << "Parsed tree:\n";
-    if(ast.has_value())
+    if (ast.has_value())
     {
         ast->print_tree();
     }
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
 
     if (argc > 1)
     {
@@ -46,14 +36,15 @@ int main(int argc, char** argv) {
     auto tokens = tokeniser.tokenise();
 
     std::cout << "tokens\n";
-    for (auto &token : tokens) {
+    for (auto& token : tokens)
+    {
         std::cout << token.content() << "\n";
     }
 
-    ncdlgen::Parser parser {tokens};
+    ncdlgen::Parser parser{tokens};
     auto ast = parser.parse();
     std::cout << "Parsed tree:\n";
-    if(ast.has_value())
+    if (ast.has_value())
     {
         ast->print_tree();
     }

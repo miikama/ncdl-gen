@@ -1,4 +1,7 @@
 
+#include <fstream>
+#include <iostream>
+#include <sstream>
 
 #include "utils.h"
 
@@ -41,6 +44,22 @@ std::vector<std::string_view> split_string(const std::string_view view, const ch
         split_components.push_back(split_comp);
     }
     return split_components;
+}
+
+std::string read_file(std::string_view file_name)
+{
+    std::ifstream istream{std::string(file_name)};
+
+    std::stringstream sstream{};
+    if (istream.is_open())
+    {
+        std::string line{};
+        while (getline(istream, line))
+        {
+            sstream << line << "\n";
+        }
+    }
+    return sstream.str();
 }
 
 } // namespace ncdlgen

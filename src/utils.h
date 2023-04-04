@@ -16,4 +16,6 @@ std::pair<std::string, std::string> split_string_at(std::string_view input, cons
 
 std::vector<std::string_view> split_string(const std::string_view view, const char character);
 
+std::string read_file(std::string_view file_name);
+
 } // namespace ncdlgen
