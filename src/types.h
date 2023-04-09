@@ -258,6 +258,11 @@ class Variable : public Element
     NetCDFType type() const { return m_type; }
     NetCDFElementaryType basic_type() const;
     const std::vector<VariableDimension>& dimensions() const { return m_dimensions; };
+    bool is_scalar() const
+    {
+        // TODO: also scalar when we have only one dimension that has size 1
+        return m_dimensions.empty();
+    }
 
   private:
     std::optional<VariableData> m_value;
