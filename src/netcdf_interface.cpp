@@ -117,7 +117,7 @@ int NetCDFInterface::get_group_id(const int parent_group_id, const std::string_v
     std::string current_path{group_name};
     if (auto ret = nc_inq_grp_ncid(parent_group_id, current_path.c_str(), &group_id))
     {
-        throw_error("nc_inq_grp_ncid", ret);
+        throw_error(fmt::format("nc_inq_grp_ncid('{}')", group_name), ret);
     }
     return group_id;
 }
