@@ -9,6 +9,8 @@ namespace ncdlgen
 
 struct VectorInterface
 {
+    template <typename ElementType> using container_type_t = std::vector<ElementType>;
+
     // 1D stl vector are supported
     template <typename ElementType>
     static constexpr bool is_supported_ndarray(const std::vector<ElementType>&)
