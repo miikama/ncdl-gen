@@ -10,8 +10,15 @@ namespace ncdlgen
 class Generator
 {
   public:
+    enum class GenerateTarget
+    {
+        Header,
+        Source,
+    };
+
     struct Options
     {
+        GenerateTarget target{GenerateTarget::Header};
         const std::string class_name{};
     };
 

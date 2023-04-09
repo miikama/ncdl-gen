@@ -1,6 +1,6 @@
 netcdf simple {
 
-    group: foo {
+    // group: foo {
 
         dimensions:
             dim = 5 ;
@@ -9,5 +9,5 @@ netcdf simple {
             int bar ;
             float baz ;
             ushort bee(dim) ;
-    }
+    // }
 }
