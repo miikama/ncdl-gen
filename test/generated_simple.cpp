@@ -1,15 +1,23 @@
 #include "generated_simple.h"
 using namespace ncdlgen;
 
-void ncdlgen::write(NetCDFInterface& interface, const simple& data){
-  interface.write<int,int,VectorInterface>("/bar", data.bar);
-  interface.write<float,float,VectorInterface>("/baz", data.baz);
-  interface.write<VectorInterface::container_type_t<ushort>,ushort,VectorInterface>("/bee", data.bee);
+void ncdlgen::write(NetCDFInterface& interface, const ncdlgen::simple& data){
+  ncdlgen::write(interface, data.foo_g);
 }
-template <> simple ncdlgen::read<simple>(NetCDFInterface& interface){
-  simple simple;
-  simple.bar = interface.read<int,int,VectorInterface>("/bar");
-  simple.baz = interface.read<float,float,VectorInterface>("/baz");
-  simple.bee = interface.read<VectorInterface::container_type_t<ushort>,ushort,VectorInterface>("/bee");
-  return simple;
+
+void ncdlgen::write(NetCDFInterface& interface, const ncdlgen::simple::foo& data){
+  interface.write<int,int,VectorInterface>("/foo/bar", data.bar);
+  interface.write<float,float,VectorInterface>("/foo/baz", data.baz);
+  interface.write<VectorInterface::container_type_t<ushort>,ushort,VectorInterface>("/foo/bee", data.bee);
 }
+
+void ncdlgen::read(NetCDFInterface& interface, ncdlgen::simple& simple){
+  ncdlgen::read(interface, simple.foo_g);
+}
+
+void ncdlgen::read(NetCDFInterface& interface, ncdlgen::simple::foo& foo){
+  foo.bar = interface.read<int,int,VectorInterface>("/foo/bar");
+  foo.baz = interface.read<float,float,VectorInterface>("/foo/baz");
+  foo.bee = interface.read<VectorInterface::container_type_t<ushort>,ushort,VectorInterface>("/foo/bee");
+}
+

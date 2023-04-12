@@ -12,13 +12,22 @@ namespace ncdlgen {
 
 struct simple
 {
-  int bar;
-  float baz;
-  std::vector<ushort> bee;
+  struct foo
+  {
+      int bar;
+      float baz;
+      std::vector<ushort> bee;
+  };
+
+  foo foo_g{};
 };
 
-template <typename StructureType> StructureType read(NetCDFInterface& interface);
+void read(NetCDFInterface& interface, simple&);
+
+void read(NetCDFInterface& interface, simple::foo&);
 
 void write(NetCDFInterface& interface, const simple&);
+
+void write(NetCDFInterface& interface, const simple::foo&);
 
 };

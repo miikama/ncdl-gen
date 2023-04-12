@@ -51,14 +51,26 @@ void dump_contents(const ncdlgen::Group& group, int indent)
     fmt::print("{}}};\n\n", indent_str);
 }
 
-void dump_reading(const ncdlgen::Group& group)
+void dump_reading(const ncdlgen::Group& group, const std::string_view fully_qualified_struct_name)
 {
-    fmt::print("template <typename StructureType> StructureType read({}& interface);\n\n", "NetCDFInterface");
+    fmt::print("void read({}& interface, {}&);\n\n", "NetCDFInterface", fully_qualified_struct_name);
+
+    for (auto& sub_group : group.groups())
+    {
+        auto sub_group_name = fmt::format("{}::{}", fully_qualified_struct_name, sub_group.name());
+        dump_reading(sub_group, sub_group_name);
+    }
 }
 
-void dump_writing(const ncdlgen::Group& group)
+void dump_writing(const ncdlgen::Group& group, const std::string_view fully_qualified_struct_name)
 {
-    fmt::print("void write({}& interface, const {}&);\n\n", "NetCDFInterface", group.name());
+    fmt::print("void write({}& interface, const {}&);\n\n", "NetCDFInterface", fully_qualified_struct_name);
+
+    for (auto& sub_group : group.groups())
+    {
+        auto sub_group_name = fmt::format("{}::{}", fully_qualified_struct_name, sub_group.name());
+        dump_writing(sub_group, sub_group_name);
+    }
 }
 
 void dump_namespace(const ncdlgen::Group& group)
@@ -67,19 +79,21 @@ void dump_namespace(const ncdlgen::Group& group)
 
     dump_contents(group, 0);
 
-    dump_reading(group);
+    dump_reading(group, group.name());
 
-    dump_writing(group);
+    dump_writing(group, group.name());
 
     fmt::print("}};\n");
 }
 
-void dump_read_group(const ncdlgen::Group& group, const std::string_view group_path)
+void dump_read_group(const ncdlgen::Group& group, const std::string_view group_path,
+                     const std::string_view name_space_name)
 {
+    auto fully_qualified_struct_name = fmt::format("{}::{}", name_space_name, group.name());
+    auto name_space_root = split_string(name_space_name, ':').at(0);
 
-    fmt::print("template <> {} {}::read<{}>({}& interface){{\n", group.name(), "ncdlgen", group.name(),
-               "NetCDFInterface");
-    fmt::print("  {} {};\n", group.name(), group.name());
+    fmt::print("void {}::read({}& interface, {}& {}){{\n", name_space_root, "NetCDFInterface",
+               fully_qualified_struct_name, group.name());
 
     for (auto& variable : group.variables())
     {
@@ -98,19 +112,27 @@ void dump_read_group(const ncdlgen::Group& group, const std::string_view group_p
         }
     }
 
-    for (auto& group : group.groups())
+    for (auto& sub_group : group.groups())
     {
-        fmt::print("  // TODO: reading of group '{}' not generated\n", group.name());
+        fmt::print("  {}::read(interface, {}.{}_g);\n", name_space_name, group.name(), sub_group.name());
     }
-    fmt::print("  return {};\n", group.name());
-    fmt::print("}}\n");
+    fmt::print("}}\n\n");
+
+    for (auto& sub_group : group.groups())
+    {
+        auto sub_group_path = fmt::format("{}/{}", group_path, sub_group.name());
+        dump_read_group(sub_group, sub_group_path, fully_qualified_struct_name);
+    }
 }
 
-void dump_write_group(const ncdlgen::Group& group, const std::string_view group_path)
+void dump_write_group(const ncdlgen::Group& group, const std::string_view group_path,
+                      const std::string_view name_space_name)
 {
+    auto fully_qualified_struct_name = fmt::format("{}::{}", name_space_name, group.name());
+    auto name_space_root = split_string(name_space_name, ':').at(0);
 
-    fmt::print("void {}::write({}& interface, const {}& data){{\n", "ncdlgen", "NetCDFInterface",
-               group.name());
+    fmt::print("void {}::write({}& interface, const {}& data){{\n", name_space_root, "NetCDFInterface",
+               fully_qualified_struct_name);
 
     for (auto& variable : group.variables())
     {
@@ -129,12 +151,18 @@ void dump_write_group(const ncdlgen::Group& group, const std::string_view group_
         }
     }
 
-    for (auto& group : group.groups())
+    for (auto& sub_group : group.groups())
     {
-        fmt::print("  // TODO: writing of group '{}' not generated\n", group.name());
+        fmt::print("  {}::write(interface, data.{}_g);\n", name_space_name, sub_group.name());
     }
 
-    fmt::print("}}\n");
+    fmt::print("}}\n\n");
+
+    for (auto& sub_group : group.groups())
+    {
+        auto sub_group_path = fmt::format("{}/{}", group_path, sub_group.name());
+        dump_write_group(sub_group, sub_group_path, fully_qualified_struct_name);
+    }
 }
 
 void dump_source(const ncdlgen::Group& group, const std::string_view group_path)
@@ -143,10 +171,10 @@ void dump_source(const ncdlgen::Group& group, const std::string_view group_path)
     fmt::print("using namespace {};\n\n", "ncdlgen");
 
     // writing
-    dump_write_group(group, group_path);
+    dump_write_group(group, group_path, "ncdlgen");
 
     // reading
-    dump_read_group(group, group_path);
+    dump_read_group(group, group_path, "ncdlgen");
 }
 
 void dump_headers(const ncdlgen::Group& group)
