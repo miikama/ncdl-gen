@@ -1,5 +1,4 @@
 #include "generated_simple.h"
-using namespace ncdlgen;
 
 void ncdlgen::write(NetCDFInterface& interface, const ncdlgen::simple& data){
   ncdlgen::write(interface, data.foo_g);

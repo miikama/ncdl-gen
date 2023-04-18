@@ -1,6 +1,5 @@
 
 #include <cassert>
-#include <sstream>
 
 #include <fmt/core.h>
 
@@ -13,13 +12,14 @@
 namespace ncdlgen
 {
 
-std::string container_for_dimensions(const std::vector<ncdlgen::VariableDimension>& dimensions)
+std::string_view
+Generator::container_for_dimensions(const std::vector<ncdlgen::VariableDimension>& dimensions)
 {
     assert(dimensions.size() == 1);
-    return "std::vector";
+    return options.container_name;
 }
 
-void dump_contents(const ncdlgen::Group& group, int indent)
+void Generator::dump_header(const ncdlgen::Group& group, int indent)
 {
     assert(indent >= 0);
     auto indent_str = std::string(indent * 2, ' ');
@@ -27,67 +27,63 @@ void dump_contents(const ncdlgen::Group& group, int indent)
     fmt::print("{}{{\n", indent_str);
     for (auto& variable : group.variables())
     {
-        auto indent_str_inner = std::string((indent + 1) * 2, ' ');
-        std::stringstream ss{};
+        auto indent_str_inner = fmt::format("{}{}", indent_str, std::string((indent + 1) * 2, ' '));
         if (!variable.dimensions().empty())
         {
-            ss << fmt::format("{}{}<{}> {}", indent_str_inner,
-                              container_for_dimensions(variable.dimensions()), variable.type().name(),
-                              variable.name());
+            fmt::print("{}{}<{}> {};\n", indent_str_inner, container_for_dimensions(variable.dimensions()),
+                       variable.type().name(), variable.name());
         }
         else
         {
-            ss << fmt::format("{}{} {}", indent_str_inner, variable.type().name(), variable.name());
+            fmt::print("{}{} {};\n", indent_str_inner, variable.type().name(), variable.name());
         }
-
-        fmt::print("{}{};\n", indent_str, ss.str());
     }
     for (auto& sub_group : group.groups())
     {
-        dump_contents(sub_group, indent + 1);
+        dump_header(sub_group, indent + 1);
         fmt::print("{}{} {}_g{{}};\n", std::string((indent + 1) * 2, ' '), sub_group.name(),
                    sub_group.name());
     }
     fmt::print("{}}};\n\n", indent_str);
 }
 
-void dump_reading(const ncdlgen::Group& group, const std::string_view fully_qualified_struct_name)
+void Generator::dump_header_reading(const ncdlgen::Group& group, const std::string_view fully_qualified_struct_name)
 {
     fmt::print("void read({}& interface, {}&);\n\n", "NetCDFInterface", fully_qualified_struct_name);
 
     for (auto& sub_group : group.groups())
     {
         auto sub_group_name = fmt::format("{}::{}", fully_qualified_struct_name, sub_group.name());
-        dump_reading(sub_group, sub_group_name);
+        dump_header_reading(sub_group, sub_group_name);
     }
 }
 
-void dump_writing(const ncdlgen::Group& group, const std::string_view fully_qualified_struct_name)
+void Generator::dump_header_writing(const ncdlgen::Group& group, const std::string_view fully_qualified_struct_name)
 {
     fmt::print("void write({}& interface, const {}&);\n\n", "NetCDFInterface", fully_qualified_struct_name);
 
     for (auto& sub_group : group.groups())
     {
         auto sub_group_name = fmt::format("{}::{}", fully_qualified_struct_name, sub_group.name());
-        dump_writing(sub_group, sub_group_name);
+        dump_header_writing(sub_group, sub_group_name);
     }
 }
 
-void dump_namespace(const ncdlgen::Group& group)
+void Generator::dump_header_namespace(const ncdlgen::Group& group)
 {
     fmt::print("namespace ncdlgen {{\n\n");
 
-    dump_contents(group, 0);
+    dump_header(group, 0);
 
-    dump_reading(group, group.name());
+    dump_header_reading(group, group.name());
 
-    dump_writing(group, group.name());
+    dump_header_writing(group, group.name());
 
     fmt::print("}};\n");
 }
 
-void dump_read_group(const ncdlgen::Group& group, const std::string_view group_path,
-                     const std::string_view name_space_name)
+void Generator::dump_source_read_group(const ncdlgen::Group& group, const std::string_view group_path,
+                                const std::string_view name_space_name)
 {
     auto fully_qualified_struct_name = fmt::format("{}::{}", name_space_name, group.name());
     auto name_space_root = split_string(name_space_name, ':').at(0);
@@ -121,12 +117,12 @@ void dump_read_group(const ncdlgen::Group& group, const std::string_view group_p
     for (auto& sub_group : group.groups())
     {
         auto sub_group_path = fmt::format("{}/{}", group_path, sub_group.name());
-        dump_read_group(sub_group, sub_group_path, fully_qualified_struct_name);
+        dump_source_read_group(sub_group, sub_group_path, fully_qualified_struct_name);
     }
 }
 
-void dump_write_group(const ncdlgen::Group& group, const std::string_view group_path,
-                      const std::string_view name_space_name)
+void Generator::dump_source_write_group(const ncdlgen::Group& group, const std::string_view group_path,
+                                 const std::string_view name_space_name)
 {
     auto fully_qualified_struct_name = fmt::format("{}::{}", name_space_name, group.name());
     auto name_space_root = split_string(name_space_name, ':').at(0);
@@ -161,23 +157,22 @@ void dump_write_group(const ncdlgen::Group& group, const std::string_view group_
     for (auto& sub_group : group.groups())
     {
         auto sub_group_path = fmt::format("{}/{}", group_path, sub_group.name());
-        dump_write_group(sub_group, sub_group_path, fully_qualified_struct_name);
+        dump_source_write_group(sub_group, sub_group_path, fully_qualified_struct_name);
     }
 }
 
-void dump_source(const ncdlgen::Group& group, const std::string_view group_path)
+void Generator::dump_source(const ncdlgen::Group& group, const std::string_view group_path)
 {
-    fmt::print("#include \"{}.h\"\n", "generated_simple");
-    fmt::print("using namespace {};\n\n", "ncdlgen");
+    fmt::print("#include \"{}.h\"\n\n", "generated_simple");
 
     // writing
-    dump_write_group(group, group_path, "ncdlgen");
+    dump_source_write_group(group, group_path, "ncdlgen");
 
     // reading
-    dump_read_group(group, group_path, "ncdlgen");
+    dump_source_read_group(group, group_path, "ncdlgen");
 }
 
-void dump_headers(const ncdlgen::Group& group)
+void Generator::dump_source_headers(const ncdlgen::Group& group)
 {
     fmt::print("#pragma once\n\n");
     fmt::print("#include \"stdint.h\"\n");
@@ -209,8 +204,8 @@ void Generator::generate(const std::string_view input_cdl)
     auto& group = *(ast->group);
     if (options.target == GenerateTarget::Header)
     {
-        dump_headers(group);
-        dump_namespace(group);
+        dump_source_headers(group);
+        dump_header_namespace(group);
     }
     else
     {
