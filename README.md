@@ -1,31 +1,119 @@
-# CDL parsing
+# ncdlgen
 
-parse Netcdf CDL format
+ncdlgen is a C++ library that provides a [NetCDF](https://github.com/Unidata/netcdf-c) cdl-_parser_ and a _code generator_ for C++ code that reads/writes NetCDF files.
 
-There is a nice BNF tester [online](https://bnfplayground.pauliankline.com)
+NetCDF is a platform independent data file format for structured data. It is commonly used in Earth observation missions as data storage format. NetCDF cdl-files describe structured data and are used together with the NetCDF library tools. The Netcdf CDL grammar is available [here](https://manpages.ubuntu.com/manpages/focal/man1/ncgen.1.html).
 
-The CDL grammar is also available [here](https://manpages.ubuntu.com/manpages/focal/man1/ncgen.1.html)
+In the future ncdlgen could be used as a code generation tool for other structured data formats as well.
 
-## Install dependencies with conan
+## Installation
 
 ```sh
 mkdir build
 cd build
 conan install --build=missing  -s build_type=Release -s compiler.libcxx=libstdc++11 ..
-cmake ..
-make -j6
+cmake -DCMAKE_INSTALL_PREFIX=~/ncdlgen ..
+make -j6 && make install
 ```
 
 > NOTE: add permanent setting with `conan profile update settings.compiler.libcxx=libstdc++11 default`
 
-To build and run the tests, enable them separately by setting `-DBUILD_TESTING=ON`:
+To build and run the tests, enable them separately by setting `cmake -DBUILD_TESTING=ON .. && make && make test`.
+
+## Parser
+
+Take an example cdl-file
+
+```
+netcdf simple {
+
+    group: foo {
+
+        dimensions:
+            dim = 5 ;
+
+        variables:
+            int bar ;
+            float baz ;
+            ushort bee(dim) ;
+    }
+}
+```
+
+Result of parsing the file contents:
 
 ```sh
-mkdir build
-cd build
-cmake -DBUILD_TESTING=ON ..
-make
-make test
+${installation_directory}/parser data/simple.cdl
+Group simple
+  Group foo
+      Dimensions
+          dim = 5
+      Variables
+          int bar
+          float baz
+          ushort bee (dim)
+```
+
+## Code generator
+
+Take the same example `data/simple.cdl` file but use it as an input for the code-generator:
+
+```sh
+${installation_directory}/generator data/simple.cdl --header > generated_simple.h
+```
+
+results in the following generated code
+
+```c++
+#pragma once
+
+#include "stdint.h"
+
+#include <vector>
+
+#include "netcdf_interface.h"
+#include "vector_interface.h"
+
+namespace ncdlgen {
+
+struct simple
+{
+  struct foo
+  {
+      int bar;
+      float baz;
+      std::vector<ushort> bee;
+  };
+
+  foo foo_g{};
+};
+
+void read(NetCDFInterface& interface, simple&);
+
+void read(NetCDFInterface& interface, simple::foo&);
+
+void write(NetCDFInterface& interface, const simple&);
+
+void write(NetCDFInterface& interface, const simple::foo&);
+
+};
+```
+
+Which can be used to read/write the contents of the entire file or its subgroups
+
+```c++
+#include "generated_simple.h"
+
+ncdlgen::simple root;
+ncdlgen::NetCDFInterface interface{"generated.nc"};
+interface.open();
+
+// Write contents of 'simple' struct to a netcdf file
+ncdlgen::write(interface, root);
+
+// Read the contents of a netcdf file into 'simple' struct
+read(interface, root);
+interface.close();
 ```
 
 ## Build using Docker
@@ -49,35 +137,6 @@ docker run --rm -it -v $(pwd):/home/$(whoami) ncdgen bash
 
 This mounts the repository at the home directory of the container user.
 
-## Manual dependency build instructions [Deprecated for conan build]
-
-Dependencies
-
-```
-fmt
-```
-
-`fmt` installation instructions <https://fmt.dev/latest/usage.html#installing-the-library>
-
-Basic build
-
-```sh
-mkdir build
-cd build
-cmake ..
-make
-```
-
-Tests use googletest, install with `apt install libgtest-dev`. Tested with gtest `10.x`. To build tests, set `-DBUILD_TESTING=ON`:
-
-```sh
-mkdir build
-cd build
-cmake -DBUILD_TESTING=ON ..
-make
-make test
-```
-
 ## Building VSCode extension
 
 Official guides
@@ -93,7 +152,6 @@ Text mate grammar guides
 [Writing grammar](https://macromates.com/manual/en/language_grammars)
 
 [Notes about textmate language grammar](https://www.apeth.com/nonblog/stories/textmatebundle.html)
-
 
 Some inspiration is derived from the first example I found, which is the Jakt language in SerenityOS
 
