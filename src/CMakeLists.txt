@@ -31,3 +31,6 @@ target_link_libraries(parser ncdlgen)
 # Add generator executable
 add_executable(generator generator/main.cpp)
 target_link_libraries(generator PRIVATE ncdlgen)
+
+# Add install target for parser and generator
+install(TARGETS parser generator)
