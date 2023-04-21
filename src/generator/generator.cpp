@@ -47,7 +47,8 @@ void Generator::dump_header(const ncdlgen::Group& group, int indent)
     fmt::print("{}}};\n\n", indent_str);
 }
 
-void Generator::dump_header_reading(const ncdlgen::Group& group, const std::string_view fully_qualified_struct_name)
+void Generator::dump_header_reading(const ncdlgen::Group& group,
+                                    const std::string_view fully_qualified_struct_name)
 {
     fmt::print("void read({}& interface, {}&);\n\n", "NetCDFInterface", fully_qualified_struct_name);
 
@@ -58,7 +59,8 @@ void Generator::dump_header_reading(const ncdlgen::Group& group, const std::stri
     }
 }
 
-void Generator::dump_header_writing(const ncdlgen::Group& group, const std::string_view fully_qualified_struct_name)
+void Generator::dump_header_writing(const ncdlgen::Group& group,
+                                    const std::string_view fully_qualified_struct_name)
 {
     fmt::print("void write({}& interface, const {}&);\n\n", "NetCDFInterface", fully_qualified_struct_name);
 
@@ -83,7 +85,7 @@ void Generator::dump_header_namespace(const ncdlgen::Group& group)
 }
 
 void Generator::dump_source_read_group(const ncdlgen::Group& group, const std::string_view group_path,
-                                const std::string_view name_space_name)
+                                       const std::string_view name_space_name)
 {
     auto fully_qualified_struct_name = fmt::format("{}::{}", name_space_name, group.name());
     auto name_space_root = split_string(name_space_name, ':').at(0);
@@ -122,7 +124,7 @@ void Generator::dump_source_read_group(const ncdlgen::Group& group, const std::s
 }
 
 void Generator::dump_source_write_group(const ncdlgen::Group& group, const std::string_view group_path,
-                                 const std::string_view name_space_name)
+                                        const std::string_view name_space_name)
 {
     auto fully_qualified_struct_name = fmt::format("{}::{}", name_space_name, group.name());
     auto name_space_root = split_string(name_space_name, ':').at(0);
@@ -180,7 +182,6 @@ void Generator::dump_source_headers(const ncdlgen::Group& group)
     fmt::print("#include <vector>\n");
     fmt::print("\n");
     fmt::print("#include \"netcdf_interface.h\"\n");
-    fmt::print("#include \"utils.h\"\n");
     fmt::print("#include \"vector_interface.h\"\n");
     fmt::print("\n");
 }

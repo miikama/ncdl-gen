@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "netcdf_interface.h"
-#include "utils.h"
 #include "vector_interface.h"
 
 namespace ncdlgen {
