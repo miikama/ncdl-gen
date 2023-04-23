@@ -8,13 +8,21 @@ In the future ncdlgen could be used as a code generation tool for other structur
 
 ## Installation
 
+Actually building `ncdlgen`
+
 ```sh
 mkdir build
 cd build
 conan install --build=missing  -s build_type=Release -s compiler.libcxx=libstdc++11 ..
-cmake -DCMAKE_INSTALL_PREFIX=~/ncdlgen ..
+cmake -DCMAKE_INSTALL_PREFIX=~/ncdlgen -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake ..
 make -j6 && make install
 ```
+
+Note the usage of conan toolchain file which creates all the required packageConfig.cmake files in the build directory for finding the dependencies. It is also possible to manually download all the primary and transitive dependencies without Conan. Currently primary dependencies are
+
+- fmt
+- netCDF
+- GTest
 
 > NOTE: add permanent setting with `conan profile update settings.compiler.libcxx=libstdc++11 default`
 
@@ -115,6 +123,36 @@ ncdlgen::write(interface, root);
 read(interface, root);
 interface.close();
 ```
+
+## ncdlgen as dependency
+
+After installing ncdlgen you can use the library in your projects `CMakeLists.txt`
+
+```cmake
+cmake_minimum_required(VERSION 3.16)
+project("ncdlgen-examples")
+
+find_package(ncdlgen REQUIRED)
+
+add_executable(custom_parser custom_parser.cpp)
+target_link_libraries(custom_parser PRIVATE ncdlgen::ncdlgen)
+```
+
+This requires all the `ncdlgen` dependencies to be installed on the system as well.
+
+If you used conan to dowload `ncdlgen` dependencies you can use the same libraries here. Copy the names of the dependencies from the `ncdlgen` repository `conanfile.txt` to a `conanfile.txt` in your project. Use that to set up the build chain
+
+> This is just a hack until `ncdlgen` is available as conan package.
+
+```sh
+cd <your-project-root>
+mkdir build
+cd build
+conan install ..
+cmake -DCMAKE_PREFIX_PATH="~/ncdlgen;$(pwd)" -DCMAKE_TOOLCHAIN_PATH=conan_toolchain.cmake ..
+```
+
+If you downloaded depencies manually, you can skip the `conan install`, leave out `-DCMAKE_TOOLCHAIN_PATH=conan_toolchain.cmake` and adding build directory to `CMAKE_PREFIX_PATH` parts.
 
 ## Build using Docker
 

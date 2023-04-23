@@ -1,11 +1,8 @@
 
 cmake_minimum_required(VERSION 3.16)
-project("ncdl-gen")
+project("ncdl-gen" VERSION 0.1.0)
 
 enable_language(CXX)
-
-include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-conan_basic_setup()
 
 add_subdirectory(src)
 
@@ -15,3 +12,6 @@ if (BUILD_TESTING)
     add_subdirectory(test)
 
 endif (BUILD_TESTING)
+
+# Export ncdlgen::ncdlgen target used by downstream consumers
+include(cmake/ncdlgenPackaging.cmake)

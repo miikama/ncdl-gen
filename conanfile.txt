@@ -4,7 +4,8 @@
  netcdf/4.8.1
 
 [generators]
- cmake
+ CMakeDeps
+ CMakeToolchain
 
 [options]
  gtest:shared=True

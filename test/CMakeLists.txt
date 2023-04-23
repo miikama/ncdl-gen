@@ -35,7 +35,7 @@ target_include_directories(test_cases PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_dependencies(test_cases generated-test-code)
 
-target_link_libraries(test_cases PRIVATE ncdlgen ${CONAN_LIBS})
+target_link_libraries(test_cases PRIVATE ncdlgen GTest::GTest)
 
 include(GoogleTest)
 gtest_discover_tests(test_cases)
