@@ -212,6 +212,8 @@ struct ValidRangeValue
 {
     Number start;
     Number end;
+
+    std::string as_string() const { return "[" + start.as_string() + ", " + end.as_string() + "]"; }
 };
 using FillValueAttributeValue = Number;
 
@@ -284,7 +286,7 @@ class Variables : public Element
   public:
     std::string description(int indent) const override;
 
-    static std::optional<Variables> parse(Parser&);
+    static void parse(Parser&, Group&);
 
     std::vector<Variable>& variables() { return m_variables; }
     const std::vector<Variable>& variables() const { return m_variables; }

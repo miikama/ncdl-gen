@@ -402,22 +402,19 @@ std::string Variables::description(int indent) const
     return description.description;
 }
 
-std::optional<Variables> Variables::parse(Parser& parser)
+void Variables::parse(Parser& parser, Group& group)
 {
-    Variables variables{};
-    variables.m_name = "variables:";
-
     std::optional<NetCDFType> previous_type = {};
     while (auto variable = VariableDeclaration::parse(parser, previous_type))
     {
         if (std::holds_alternative<Variable>(*variable))
         {
-            variables.m_variables.push_back(std::get<Variable>(*variable));
+            group.variables().push_back(std::get<Variable>(*variable));
 
             // multiple variables in one line, continue to following
             if (parser.peek_specific({","}))
             {
-                previous_type = variables.m_variables.back().type();
+                previous_type = group.variables().back().type();
                 parser.pop();
             }
             else
@@ -427,14 +424,13 @@ std::optional<Variables> Variables::parse(Parser& parser)
         }
         else if (std::holds_alternative<Attribute>(*variable))
         {
-            variables.m_attributes.push_back(std::get<Attribute>(*variable));
+            group.attributes().push_back(std::get<Attribute>(*variable));
         }
         else
         {
             throw std::runtime_error("Incorrect type, this is bug.");
         }
     }
-    return variables;
 }
 
 std::string Attribute::as_string() const
@@ -488,6 +484,14 @@ std::string Attribute::string_data() const
     {
         return std::get<std::string>(m_value);
     }
+    else if (std::holds_alternative<Number>(m_value))
+    {
+        return std::get<Number>(m_value).as_string();
+    }
+    else if (std::holds_alternative<ValidRangeValue>(m_value))
+    {
+        return std::get<ValidRangeValue>(m_value).as_string();
+    }
     return "";
 }
 
@@ -539,6 +543,14 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
     attr.m_attribute_name = split_str.second;
     attr.m_type = attribute_type;
 
+    // Try to find the variable this attribute corresponds to
+    auto variable = parser.resolve_variable_for_name(*attr.m_variable_name);
+    if (!variable && !is_global)
+    {
+        parser.log_parse_error(fmt::format("Could not find variable '{}' when parsing non-global attribute '{}'", *attr.m_variable_name, attr.m_attribute_name));
+        return {};
+    }
+
     // Currently supported string attributes
     if (attr.m_attribute_name == "long_name" || attr.m_attribute_name == "units")
     {
@@ -549,10 +561,32 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
         }
         attr.m_value = std::string(value->content());
     }
+    if (    attr.m_attribute_name == "_ChunkSizes"
+        ||  attr.m_attribute_name == "_Storage"
+        ||  attr.m_attribute_name == "_Fletcher32"
+        ||  attr.m_attribute_name == "_DeflateLevel"
+        ||  attr.m_attribute_name == "_Endianness"
+        ||  attr.m_attribute_name == "_NoFill"
+        )
+    {
+        auto value = parser.pop();
+        if (!value || value->content().empty())
+        {
+            return {};
+        }
+        attr.m_value = std::string(value->content());
+        parser.log_parse_error(fmt::format("Tried to parse attribute {}, maybe succeeded.", attr.m_attribute_name));
+    }
     else if (attr.m_attribute_name == "_FillValue")
     {
-        // TODO: fetch type for untyped attributes from the corresponding variable
-        auto fill_value = parser.parse_number(attr.m_type.value_or(NetCDFElementaryType::Default));
+        // Get the fill value type from the variable
+        if (!variable)
+        {
+            parser.log_parse_error("No matching variable found when parsing attribute '_FillValue'");
+            return {};
+        }
+        attr.m_type = variable->basic_type();
+        auto fill_value = parser.parse_number(*attr.m_type);
         if (!fill_value)
         {
             parser.log_parse_error("Could not parse value for attribute '_FillValue'");
@@ -560,12 +594,30 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
         }
         attr.m_value = *fill_value;
     }
+    else if (attr.m_attribute_name == "_Shuffle")
+    {
+        // Shuffle attribute is always Bool
+        attr.m_type = NetCDFElementaryType::Ubyte;
+        auto fill_value = parser.parse_number(*attr.m_type);
+        if (!fill_value)
+        {
+            parser.log_parse_error("Could not parse value for attribute '_Shuffle'");
+            return {};
+        }
+        attr.m_value = *fill_value;
+    }
     else if (attr.m_attribute_name == "valid_range")
     {
-        // TODO: fetch type for untyped attributes from the corresponding variable
-        auto start = parser.parse_number(attr.m_type.value_or(NetCDFElementaryType::Default));
+        // Get the fill value type from the variable
+        if (!variable)
+        {
+            parser.log_parse_error("No matching variable found when parsing attribute 'valid_range'");
+            return {};
+        }
+        attr.m_type = variable->basic_type();
+        auto start = parser.parse_number(*attr.m_type);
         auto comma = parser.pop_specific({","});
-        auto end = parser.parse_number(attr.m_type.value_or(NetCDFElementaryType::Default));
+        auto end = parser.parse_number(*attr.m_type);
         if (!start || !comma || !end)
         {
             parser.log_parse_error("Could not parse value for attribute 'valid_range'");
@@ -934,7 +986,8 @@ std::optional<Group> Group::parse(Parser& parser)
         }
         else if (content->content() == "variables:")
         {
-            group.m_variables = Variables::parse(parser);
+            group.m_variables = Variables {};
+            Variables::parse(parser, group);
         }
         else if (content->content() == "group:")
         {

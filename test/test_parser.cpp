@@ -117,6 +117,46 @@ TEST(parser, global_attributes)
     EXPECT_EQ(attributes[1].string_data(), std::string(""));
 }
 
+TEST(parser, attributes)
+{
+    std::string input{"netcdf foo {\n"
+                      "   variables:\n"
+                      "      int foo;\n"
+                      "      foo:_FillValue = 1;\n"
+                      "      float bar;\n"
+                      "      bar:_FillValue = 1.4;\n"
+                      "      bar:valid_range = 1.0, 2.5;\n"
+                      "}"};
+    auto input_tokens = tokens_from_string(input);
+
+    Parser parser{input_tokens};
+    auto result = parser.parse();
+    ASSERT_TRUE(result.has_value());
+
+    ASSERT_TRUE(result->group);
+    auto variables = result->group->variables();
+    ASSERT_EQ(variables.size(), 2);
+
+    auto attributes = result->group->attributes();
+    ASSERT_EQ(attributes.size(), 3);
+
+    // foo attributes
+    EXPECT_EQ(attributes[0].name(), "_FillValue");
+    EXPECT_TRUE(attributes[0].type().has_value());
+    EXPECT_EQ(attributes[0].type().value(), NetCDFType(NetCDFElementaryType::Int));
+    EXPECT_EQ(attributes[0].string_data(), "1");
+
+    // bar attributes
+    EXPECT_EQ(attributes[1].name(), "_FillValue");
+    EXPECT_TRUE(attributes[1].type().has_value());
+    EXPECT_EQ(attributes[1].type().value(), NetCDFType(NetCDFElementaryType::Float));
+    EXPECT_EQ(attributes[1].string_data(), "1.4");
+    EXPECT_EQ(attributes[2].name(), "valid_range");
+    EXPECT_TRUE(attributes[2].type().has_value());
+    EXPECT_EQ(attributes[2].type().value(), NetCDFType(NetCDFElementaryType::Float));
+    EXPECT_EQ(attributes[2].string_data(), "[1, 2.5]");
+}
+
 TEST(parser, variables)
 {
     std::string input{"netcdf foo {\n"

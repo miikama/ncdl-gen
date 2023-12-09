@@ -8,9 +8,6 @@
 namespace ncdlgen
 {
 
-// helper constant for the static asserts in template
-template <class> inline constexpr bool always_false_v = false;
-
 std::optional<RootGroup> Parser::parse()
 {
 
