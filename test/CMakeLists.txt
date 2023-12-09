@@ -8,7 +8,7 @@ add_custom_command(
                    COMMAND generator ${CMAKE_SOURCE_DIR}/data/simple.cdl --source > ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.cpp
                    DEPENDS generator
                    DEPENDS ${CMAKE_SOURCE_DIR}/data/simple.cdl
-                   VERBATIM                   
+                   VERBATIM
                    )
 # Add dependency to generated code
 add_custom_target(generated-test-code
@@ -19,6 +19,17 @@ set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.h
                             PROPERTIES GENERATED TRUE)
 set(GENERATED_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.cpp)
 
+# Make netcdf dependent test cases optional
+if(BUILD_NETCDF)
+
+    set(NETCDF_TESTS
+        test_netcdf_interface.cpp
+        test_generator.cpp
+        ${GENERATED_SOURCES}
+        )
+endif()
+
+
 # Locate GTest
 find_package(GTest REQUIRED)
 
@@ -27,9 +38,8 @@ add_executable(test_cases test_main.cpp
                test_parser.cpp
                test_common.cpp
                test_types.cpp
-               test_netcdf_interface.cpp
-               test_generator.cpp
-               ${GENERATED_SOURCES})
+               ${NETCDF_TESTS}
+               )
 target_include_directories(test_cases PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 
