@@ -445,7 +445,7 @@ std::string Attribute::as_string() const
             }
             else if constexpr (std::is_same_v<T, ValidRangeValue>)
             {
-                return fmt::format("{} - {}", arg.start.as_string(), arg.end.as_string());
+                return fmt::format("[{}, {}]", arg.start.as_string(), arg.end.as_string());
             }
             else if constexpr (std::is_same_v<T, FillValueAttributeValue>)
             {
@@ -480,17 +480,10 @@ std::string Attribute::description(int indent) const
 
 std::string Attribute::string_data() const
 {
+    // Return the contents of the attribute if it was a string
     if (std::holds_alternative<std::string>(m_value))
     {
         return std::get<std::string>(m_value);
-    }
-    else if (std::holds_alternative<Number>(m_value))
-    {
-        return std::get<Number>(m_value).as_string();
-    }
-    else if (std::holds_alternative<ValidRangeValue>(m_value))
-    {
-        return std::get<ValidRangeValue>(m_value).as_string();
     }
     return "";
 }
@@ -547,7 +540,9 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
     auto variable = parser.resolve_variable_for_name(*attr.m_variable_name);
     if (!variable && !is_global)
     {
-        parser.log_parse_error(fmt::format("Could not find variable '{}' when parsing non-global attribute '{}'", *attr.m_variable_name, attr.m_attribute_name));
+        parser.log_parse_error(
+            fmt::format("Could not find variable '{}' when parsing non-global attribute '{}'",
+                        *attr.m_variable_name, attr.m_attribute_name));
         return {};
     }
 
@@ -561,13 +556,9 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
         }
         attr.m_value = std::string(value->content());
     }
-    if (    attr.m_attribute_name == "_ChunkSizes"
-        ||  attr.m_attribute_name == "_Storage"
-        ||  attr.m_attribute_name == "_Fletcher32"
-        ||  attr.m_attribute_name == "_DeflateLevel"
-        ||  attr.m_attribute_name == "_Endianness"
-        ||  attr.m_attribute_name == "_NoFill"
-        )
+    if (attr.m_attribute_name == "_ChunkSizes" || attr.m_attribute_name == "_Storage" ||
+        attr.m_attribute_name == "_Fletcher32" || attr.m_attribute_name == "_DeflateLevel" ||
+        attr.m_attribute_name == "_Endianness" || attr.m_attribute_name == "_NoFill")
     {
         auto value = parser.pop();
         if (!value || value->content().empty())
@@ -575,7 +566,8 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
             return {};
         }
         attr.m_value = std::string(value->content());
-        parser.log_parse_error(fmt::format("Tried to parse attribute {}, maybe succeeded.", attr.m_attribute_name));
+        parser.log_parse_error(
+            fmt::format("Tried to parse attribute {}, maybe succeeded.", attr.m_attribute_name));
     }
     else if (attr.m_attribute_name == "_FillValue")
     {
@@ -649,8 +641,8 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
             auto data = VariableData::parse(parser, type);
             if (!data)
             {
-                fmt::print("Parsing global attribute {} with type {} failed.\n", split_str.second,
-                           type.name());
+                parser.log_parse_error(fmt::format("Parsing global attribute {} with type {} failed.",
+                    split_str.second, type.name()));
                 return {};
             }
             attr.m_value = *data;
@@ -968,29 +960,35 @@ std::optional<Group> Group::parse(Parser& parser)
     group.m_name = group_name->content();
     parser.push_group_stack(group);
 
-    while (auto content = parser.pop())
+    while (auto content = parser.peek())
     {
-        parser.skip_extra_tokens();
-
         if (content->content() == "dimensions:")
         {
+            parser.pop();
             group.m_dimensions = Dimensions::parse(parser);
         }
         else if (content->content() == "types:")
         {
+            parser.pop();
             Types::parse(parser, group.m_types);
         }
         else if (content->content() == "data:")
         {
+            parser.pop();
             VariableSection::parse(parser, group);
         }
         else if (content->content() == "variables:")
         {
-            group.m_variables = Variables {};
+            parser.pop();
+            if (!group.m_variables)
+            {
+                group.m_variables = Variables{};
+            }
             Variables::parse(parser, group);
         }
         else if (content->content() == "group:")
         {
+            parser.pop();
             if (auto child_group = Group::parse(parser))
             {
                 group.m_groups.push_back(std::move(*child_group));
@@ -998,14 +996,22 @@ std::optional<Group> Group::parse(Parser& parser)
         }
         else if (content->content() == "}")
         {
+            parser.pop();
             parser.pop_group_stack();
             return group;
         }
+        // try to parse things as attributes
         else
         {
-            parser.log_parse_error(
-                fmt::format("Unexpected token {} found for group {}", content->content(), group.m_name));
+            if (!group.m_variables)
+            {
+                group.m_variables = Variables{};
+            }
+            Variables::parse(parser, group);
         }
+
+        // Prepare a clean slate of tokens for the next iteration
+        parser.skip_extra_tokens();
     }
     parser.pop_group_stack();
     return {};
