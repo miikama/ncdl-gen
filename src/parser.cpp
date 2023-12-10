@@ -82,6 +82,26 @@ std::optional<const Token> Parser::pop_specific(const std::vector<std::string>& 
     return {};
 }
 
+std::optional<const Token> Parser::pop_until_specific(const std::vector<std::string>& possible_tokens)
+{
+    // If the searched token is the first one
+    if (peek_specific(possible_tokens))
+    {
+        return pop();
+    }
+
+    // Then start popping tokens untile the next token is the searched one
+    while (auto token = pop())
+    {
+        if (peek_specific(possible_tokens))
+        {
+            return pop();
+
+        }
+    }
+    return {};
+}
+
 std::optional<NetCDFType> Parser::peek_type()
 {
     auto token = peek();

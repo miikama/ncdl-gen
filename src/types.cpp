@@ -556,7 +556,7 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
         }
         attr.m_value = std::string(value->content());
     }
-    if (attr.m_attribute_name == "_ChunkSizes" || attr.m_attribute_name == "_Storage" ||
+    else if (attr.m_attribute_name == "_ChunkSizes" || attr.m_attribute_name == "_Storage" ||
         attr.m_attribute_name == "_Fletcher32" || attr.m_attribute_name == "_DeflateLevel" ||
         attr.m_attribute_name == "_Endianness" || attr.m_attribute_name == "_NoFill")
     {
@@ -565,9 +565,8 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
         {
             return {};
         }
+        // TODO: some of these are not just strings, like the chunksizes
         attr.m_value = std::string(value->content());
-        parser.log_parse_error(
-            fmt::format("Tried to parse attribute {}, maybe succeeded.", attr.m_attribute_name));
     }
     else if (attr.m_attribute_name == "_FillValue")
     {
@@ -588,19 +587,18 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
     }
     else if (attr.m_attribute_name == "_Shuffle")
     {
-        // Shuffle attribute is always Bool
-        attr.m_type = NetCDFElementaryType::Ubyte;
-        auto fill_value = parser.parse_number(*attr.m_type);
-        if (!fill_value)
+        // TODO: Shuffle attribute is always Bool, but only parsed as string
+        auto value = parser.pop();
+        if (!value || value->content().empty())
         {
             parser.log_parse_error("Could not parse value for attribute '_Shuffle'");
             return {};
         }
-        attr.m_value = *fill_value;
+        attr.m_value = std::string(value->content());
     }
     else if (attr.m_attribute_name == "valid_range")
     {
-        // Get the fill value type from the variable
+        // Get the valid range value type from the variable
         if (!variable)
         {
             parser.log_parse_error("No matching variable found when parsing attribute 'valid_range'");
@@ -650,11 +648,17 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
     }
     else
     {
-        parser.log_parse_error(fmt::format("Unsupported attribute '{}'\n", attr.m_attribute_name));
-        return {};
+        // TODO: For now, just parse everything thought to be attribute
+        auto value = parser.pop();
+        if (!value || value->content().empty())
+        {
+            return {};
+        }
+        // parser.log_parse_error(fmt::format("Unsupported attribute '{}'\n", attr.m_attribute_name));
+        attr.m_value = std::string(value->content());
     }
 
-    auto line_end = parser.pop_specific({";"});
+    auto line_end = parser.pop_until_specific({";"});
 
     if (!line_end)
     {
