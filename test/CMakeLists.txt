@@ -31,7 +31,12 @@ endif()
 
 
 # Locate GTest
-find_package(GTest REQUIRED)
+find_package(GTest QUIET)
+if (NOT GTest_FOUND)
+    message(STATUS "Did not find GTest in Module mode, searching in config")
+    find_package(GTest CONFIG REQUIRED)
+endif()
+message(STATUS "Found GTest ${GTest_FOUND}")
 
 add_executable(test_cases test_main.cpp
                test_tokeniser.cpp
@@ -45,7 +50,7 @@ target_include_directories(test_cases PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_dependencies(test_cases generated-test-code)
 
-target_link_libraries(test_cases PRIVATE ncdlgen GTest::GTest)
+target_link_libraries(test_cases PRIVATE ncdlgen GTest::gtest)
 
 include(GoogleTest)
 gtest_discover_tests(test_cases)
