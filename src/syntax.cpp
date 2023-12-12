@@ -120,4 +120,42 @@ const std::string_view name_for_type(const NetCDFElementaryType& type)
     }
 }
 
+const std::string_view cpp_name_for_type(const NetCDFElementaryType& type)
+{
+    switch (type)
+    {
+    case NetCDFElementaryType::Char:
+        return "int8_t";
+    case NetCDFElementaryType::Byte:
+        return "int8_t";
+    case NetCDFElementaryType::Ubyte:
+        return "uint8_t";
+    case NetCDFElementaryType::Short:
+        return "int16_t";
+    case NetCDFElementaryType::Ushort:
+        return "uint16_t";
+    case NetCDFElementaryType::Int:
+        return "int";
+    case NetCDFElementaryType::Uint:
+        return "int32_t";
+    case NetCDFElementaryType::Long:
+        return "int64_t";
+    case NetCDFElementaryType::Int64:
+        return "int64_t";
+    case NetCDFElementaryType::Uint64:
+        return "uint64_t";
+    case NetCDFElementaryType::Float:
+        return "float";
+    case NetCDFElementaryType::Real:
+        return "double";
+    case NetCDFElementaryType::Double:
+        return "double";
+    case NetCDFElementaryType::String:
+        return "std::string";
+    case NetCDFElementaryType::Default:
+        return "unknown-type";
+    }
+    return "unknown-type";
+}
+
 } // namespace ncdlgen

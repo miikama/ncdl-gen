@@ -15,7 +15,7 @@ struct simple
   {
       int bar;
       float baz;
-      std::vector<ushort> bee;
+      std::vector<uint16_t> bee;
   };
 
   foo foo_g{};
