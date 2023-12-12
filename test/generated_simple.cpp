@@ -7,7 +7,8 @@ void ncdlgen::write(NetCDFInterface& interface, const ncdlgen::simple& data){
 void ncdlgen::write(NetCDFInterface& interface, const ncdlgen::simple::foo& data){
   interface.write<int,int,VectorInterface>("/foo/bar", data.bar);
   interface.write<float,float,VectorInterface>("/foo/baz", data.baz);
-  interface.write<VectorInterface::container_type_t<uint16_t>,uint16_t,VectorInterface>("/foo/bee", data.bee);
+  interface.write<std::vector<uint16_t>,uint16_t,VectorInterface>("/foo/bee", data.bee);
+  interface.write<std::vector<std::vector<int>>,int,VectorInterface>("/foo/foobar", data.foobar);
 }
 
 void ncdlgen::read(NetCDFInterface& interface, ncdlgen::simple& simple){
@@ -17,6 +18,7 @@ void ncdlgen::read(NetCDFInterface& interface, ncdlgen::simple& simple){
 void ncdlgen::read(NetCDFInterface& interface, ncdlgen::simple::foo& foo){
   foo.bar = interface.read<int,int,VectorInterface>("/foo/bar");
   foo.baz = interface.read<float,float,VectorInterface>("/foo/baz");
-  foo.bee = interface.read<VectorInterface::container_type_t<uint16_t>,uint16_t,VectorInterface>("/foo/bee");
+  foo.bee = interface.read<std::vector<uint16_t>,uint16_t,VectorInterface>("/foo/bee");
+  foo.foobar = interface.read<std::vector<std::vector<int>>,int,VectorInterface>("/foo/foobar");
 }
 

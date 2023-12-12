@@ -12,11 +12,15 @@
 namespace ncdlgen
 {
 
-std::string_view
-Generator::container_for_dimensions(const std::vector<ncdlgen::VariableDimension>& dimensions)
+std::string Generator::container_for_dimensions(const std::string_view& element_type_name,
+                                                const std::vector<ncdlgen::VariableDimension>& dimensions)
 {
-    assert(dimensions.size() == 1);
-    return options.container_name;
+    std::string full_name{element_type_name};
+    for (auto& dimension : dimensions)
+    {
+        full_name = fmt::format("std::vector<{}>", full_name);
+    }
+    return full_name;
 }
 
 void Generator::dump_header(const ncdlgen::Group& group, int indent)
@@ -28,17 +32,11 @@ void Generator::dump_header(const ncdlgen::Group& group, int indent)
     for (auto& variable : group.variables())
     {
         auto indent_str_inner = fmt::format("{}{}", indent_str, std::string((indent + 1) * 2, ' '));
-        if (!variable.dimensions().empty())
-        {
-            fmt::print("{}{}<{}> {};\n", indent_str_inner, container_for_dimensions(variable.dimensions()),
-                       cpp_name_for_type(variable.basic_type()), variable.name());
-        }
-        else
-        {
-            fmt::print("{}{} {};\n", indent_str_inner, cpp_name_for_type(variable.basic_type()),
-                       variable.name());
-        }
+        fmt::print("{}{} {};\n", indent_str_inner,
+                   container_for_dimensions(cpp_name_for_type(variable.basic_type()), variable.dimensions()),
+                   variable.name());
     }
+
     for (auto& sub_group : group.groups())
     {
         dump_header(sub_group, indent + 1);
@@ -99,20 +97,11 @@ void Generator::dump_source_read_group(const ncdlgen::Group& group, const std::s
     for (auto& variable : group.variables())
     {
         auto full_path = fmt::format("{}/{}", group_path, variable.name());
-        if (variable.is_scalar())
-        {
-            fmt::print("  {}.{} = interface.read<{},{},{}>(\"{}\");\n", group.name(), variable.name(),
-                       cpp_name_for_type(variable.basic_type()), cpp_name_for_type(variable.basic_type()),
-                       options.array_interface, full_path);
-        }
-        else
-        {
-            auto container_type_name = fmt::format("{}::container_type_t<{}>", options.array_interface,
-                                                   cpp_name_for_type(variable.basic_type()));
-            fmt::print("  {}.{} = interface.read<{},{},{}>(\"{}\");\n", group.name(), variable.name(),
-                       container_type_name, cpp_name_for_type(variable.basic_type()), options.array_interface,
-                       full_path);
-        }
+        auto container_type_name =
+            container_for_dimensions(cpp_name_for_type(variable.basic_type()), variable.dimensions());
+        fmt::print("  {}.{} = interface.read<{},{},{}>(\"{}\");\n", group.name(), variable.name(),
+                   container_type_name, cpp_name_for_type(variable.basic_type()), options.array_interface,
+                   full_path);
     }
 
     for (auto& sub_group : group.groups())
@@ -140,20 +129,11 @@ void Generator::dump_source_write_group(const ncdlgen::Group& group, const std::
     for (auto& variable : group.variables())
     {
         auto full_path = fmt::format("{}/{}", group_path, variable.name());
-        if (variable.is_scalar())
-        {
-            fmt::print("  interface.write<{},{},{}>(\"{}\", data.{});\n",
-                       cpp_name_for_type(variable.basic_type()), cpp_name_for_type(variable.basic_type()),
-                       options.array_interface, full_path, variable.name());
-        }
-        else
-        {
-            auto container_type_name = fmt::format("{}::container_type_t<{}>", options.array_interface,
-                                                   cpp_name_for_type(variable.basic_type()));
-            fmt::print("  interface.write<{},{},{}>(\"{}\", data.{});\n", container_type_name,
-                       cpp_name_for_type(variable.basic_type()), options.array_interface, full_path,
-                       variable.name());
-        }
+        auto container_type_name =
+            container_for_dimensions(cpp_name_for_type(variable.basic_type()), variable.dimensions());
+        fmt::print("  interface.write<{},{},{}>(\"{}\", data.{});\n", container_type_name,
+                   cpp_name_for_type(variable.basic_type()), options.array_interface, full_path,
+                   variable.name());
     }
 
     for (auto& sub_group : group.groups())
