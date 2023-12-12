@@ -1,10 +1,10 @@
 #pragma once
 
 #include "stdint.h"
+#include "netcdf_interface.h"
 
 #include <vector>
 
-#include "netcdf_interface.h"
 #include "vector_interface.h"
 
 namespace ncdlgen {
