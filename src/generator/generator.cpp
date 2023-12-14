@@ -12,7 +12,7 @@
 namespace ncdlgen
 {
 
-std::string Generator::container_for_dimensions(const std::string_view& element_type_name,
+std::string DefaultCustomisation::container_for_dimensions(const std::string_view& element_type_name,
                                                 const std::vector<ncdlgen::VariableDimension>& dimensions)
 {
     std::string full_name{element_type_name};
@@ -33,7 +33,7 @@ void Generator::dump_header(const ncdlgen::Group& group, int indent)
     {
         auto indent_str_inner = fmt::format("{}{}", indent_str, std::string((indent + 1) * 2, ' '));
         fmt::print("{}{} {};\n", indent_str_inner,
-                   container_for_dimensions(cpp_name_for_type(variable.basic_type()), variable.dimensions()),
+                   options.container_for_dimensions(cpp_name_for_type(variable.basic_type()), variable.dimensions()),
                    variable.name());
     }
 
@@ -98,7 +98,7 @@ void Generator::dump_source_read_group(const ncdlgen::Group& group, const std::s
     {
         auto full_path = fmt::format("{}/{}", group_path, variable.name());
         auto container_type_name =
-            container_for_dimensions(cpp_name_for_type(variable.basic_type()), variable.dimensions());
+            options.container_for_dimensions(cpp_name_for_type(variable.basic_type()), variable.dimensions());
         fmt::print("  {}.{} = interface.read<{},{},{}>(\"{}\");\n", group.name(), variable.name(),
                    container_type_name, cpp_name_for_type(variable.basic_type()), options.array_interface,
                    full_path);
@@ -130,7 +130,7 @@ void Generator::dump_source_write_group(const ncdlgen::Group& group, const std::
     {
         auto full_path = fmt::format("{}/{}", group_path, variable.name());
         auto container_type_name =
-            container_for_dimensions(cpp_name_for_type(variable.basic_type()), variable.dimensions());
+            options.container_for_dimensions(cpp_name_for_type(variable.basic_type()), variable.dimensions());
         fmt::print("  interface.write<{},{},{}>(\"{}\", data.{});\n", container_type_name,
                    cpp_name_for_type(variable.basic_type()), options.array_interface, full_path,
                    variable.name());

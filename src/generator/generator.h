@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <functional>
 #include <string>
 #include <string_view>
 
@@ -8,6 +9,12 @@
 
 namespace ncdlgen
 {
+
+struct DefaultCustomisation
+{
+    static std::string container_for_dimensions(const std::string_view& element_type_name,
+                                                const std::vector<ncdlgen::VariableDimension>& dimensions);
+};
 
 class Generator
 {
@@ -27,6 +34,8 @@ class Generator
         std::vector<std::string> base_headers{"stdint.h", "netcdf_interface.h"};
         std::vector<std::string> library_headers{"<vector>"};
         std::vector<std::string> interface_headers{"vector_interface.h"};
+        std::function<std::string(const std::string_view&, const std::vector<ncdlgen::VariableDimension>&)>
+            container_for_dimensions{DefaultCustomisation::container_for_dimensions};
     };
 
     Generator(Options options) : options(std::move(options)) {}
@@ -49,9 +58,6 @@ class Generator
     void dump_source_headers(const ncdlgen::Group& group);
 
     // options
-    std::string container_for_dimensions(const std::string_view& element_type_name,
-                                         const std::vector<ncdlgen::VariableDimension>& dimensions);
-
     Options options{};
 };
 
