@@ -13,7 +13,8 @@ namespace ncdlgen
 std::string_view NetCDFType::name() const
 {
     return std::visit(
-        [](auto&& arg) -> std::string_view {
+        [](auto&& arg) -> std::string_view
+        {
             using T = std::decay_t<decltype(arg)>;
             if constexpr (std::is_same_v<T, NetCDFElementaryType>)
             {
@@ -325,7 +326,7 @@ NetCDFElementaryType Variable::basic_type() const
     {
         return std::get<NetCDFElementaryType>(m_type.type);
     }
-    fmt::print("ERROR: Trying to retreive type from not basic type!\n");
+    fmt::print(stderr, "ERROR: Trying to retreive type from not basic type!\n");
     return NetCDFElementaryType::Default;
 }
 
@@ -437,7 +438,8 @@ std::string Attribute::as_string() const
 {
     // Use the visitor to go through all types
     return std::visit(
-        [](auto&& arg) -> std::string {
+        [](auto&& arg) -> std::string
+        {
             using T = std::decay_t<decltype(arg)>;
             if constexpr (std::is_same_v<T, std::string>)
             {
@@ -557,8 +559,8 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
         attr.m_value = std::string(value->content());
     }
     else if (attr.m_attribute_name == "_ChunkSizes" || attr.m_attribute_name == "_Storage" ||
-        attr.m_attribute_name == "_Fletcher32" || attr.m_attribute_name == "_DeflateLevel" ||
-        attr.m_attribute_name == "_Endianness" || attr.m_attribute_name == "_NoFill")
+             attr.m_attribute_name == "_Fletcher32" || attr.m_attribute_name == "_DeflateLevel" ||
+             attr.m_attribute_name == "_Endianness" || attr.m_attribute_name == "_NoFill")
     {
         auto value = parser.pop();
         if (!value || value->content().empty())
@@ -640,7 +642,7 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
             if (!data)
             {
                 parser.log_parse_error(fmt::format("Parsing global attribute {} with type {} failed.",
-                    split_str.second, type.name()));
+                                                   split_str.second, type.name()));
                 return {};
             }
             attr.m_value = *data;
@@ -662,8 +664,8 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
 
     if (!line_end)
     {
-        fmt::print("Could not find line end for variable definition for attribute {}\n",
-                   attr.m_attribute_name);
+        parser.log_parse_error(fmt::format(
+            "Could not find line end for variable definition for attribute {}\n", attr.m_attribute_name));
         return {};
     }
     return attr;
@@ -677,7 +679,8 @@ std::string VariableData::as_string() const
 std::optional<VariableData> VariableData::parse(Parser& parser, const NetCDFType& type)
 {
     return std::visit(
-        [&parser](auto&& arg) -> std::optional<VariableData> {
+        [&parser](auto&& arg) -> std::optional<VariableData>
+        {
             using T = std::decay_t<decltype(arg)>;
             if constexpr (std::is_same_v<T, NetCDFElementaryType>)
             {
@@ -739,7 +742,7 @@ VariableDeclaration::parse(Parser& parser, std::optional<NetCDFType> existing_ty
     auto name = parser.peek();
     if (!name)
     {
-        fmt::print("Did not find name for variable\n");
+        parser.log_parse_error("Did not find name for variable\n");
         return {};
     }
 
@@ -888,13 +891,15 @@ void VariableSection::parse(Parser& parser, Group& group)
         auto* variable = parser.resolve_variable_for_name(name->content());
         if (!variable)
         {
-            fmt::print("Could not resolve variable name {} in group {}\n", name->content(), group.name());
+            parser.log_parse_error(fmt::format("Could not resolve variable name {} in group {}\n",
+                                               name->content(), group.name()));
             return;
         }
         auto equals = parser.pop_specific({"="});
         if (!equals)
         {
-            fmt::print("Could not find equals for variable data for variable {}\n", name->content());
+            parser.log_parse_error(
+                fmt::format("Could not find equals for variable data for variable {}\n", name->content()));
             return;
         }
         auto data = parser.parse_data(variable->type());
@@ -905,7 +910,7 @@ void VariableSection::parse(Parser& parser, Group& group)
         auto line_end = parser.pop_specific({";"});
         if (!line_end)
         {
-            fmt::print("Could not find line end for variable data for variable {}\n", name->content());
+            parser.log_parse_error(fmt::format("Could not find line end for variable data for variable {}\n", name->content()));
             return;
         }
     }

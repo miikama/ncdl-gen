@@ -96,7 +96,6 @@ std::optional<const Token> Parser::pop_until_specific(const std::vector<std::str
         if (peek_specific(possible_tokens))
         {
             return pop();
-
         }
     }
     return {};
@@ -125,7 +124,7 @@ SourceLocation Parser::current_cursor_location() const
 void Parser::log_parse_error(const std::string& message)
 {
     auto cursor_location = current_cursor_location();
-    fmt::print("Parser Error at line {} and column {}:\n    {}\n", cursor_location.line + 1,
+    fmt::print(stderr, "Parser Error at line {} and column {}:\n    {}\n", cursor_location.line + 1,
                cursor_location.column + 1, message);
 }
 
@@ -247,7 +246,8 @@ std::optional<Number> Parser::parse_number(const NetCDFType& type)
 
     if (!std::holds_alternative<NetCDFElementaryType>(type.type))
     {
-        fmt::print("Parsing number for user defined complex type '{}' is not supported\n", type.name());
+        log_parse_error(
+            fmt::format("Parsing number for user defined complex type '{}' is not supported\n", type.name()));
         return {};
     }
     auto& basic_type = std::get<NetCDFElementaryType>(type.type);
@@ -326,14 +326,15 @@ std::optional<Number> Parser::parse_number(const NetCDFType& type)
         }
 
         default:
-            fmt::print("Parsing number of NetCDF type '{}' is not supported\n", name_for_type(basic_type));
+            log_parse_error(fmt::format("Parsing number of NetCDF type '{}' is not supported\n",
+                                        name_for_type(basic_type)));
             return {};
         }
     }
     catch (std::invalid_argument)
     {
-        fmt::print("Could not parse string '{}' as NetCDF type '{}'.\n", number_string,
-                   name_for_type(basic_type));
+        log_parse_error(fmt::format("Could not parse string '{}' as NetCDF type '{}'.\n", number_string,
+                                    name_for_type(basic_type)));
         return {};
     }
 }
@@ -342,7 +343,8 @@ std::optional<Array> Parser::parse_data(const NetCDFType& type)
 {
 
     return std::visit(
-        [&](auto&& arg) -> std::optional<Array> {
+        [&](auto&& arg) -> std::optional<Array>
+        {
             using T = std::decay_t<decltype(arg)>;
             if constexpr (std::is_same_v<T, NetCDFElementaryType>)
             {
@@ -383,11 +385,12 @@ std::optional<Array> Parser::parse_array(const NetCDFElementaryType& type)
 std::optional<Array> Parser::parse_complex_type_data(const ComplexType& type)
 {
     return std::visit(
-        [this](auto&& arg) -> std::optional<Array> {
+        [this](auto&& arg) -> std::optional<Array>
+        {
             using T = std::decay_t<decltype(arg)>;
             if constexpr (std::is_same_v<T, OpaqueType>)
             {
-                fmt::print("TODO: parsing OpaqueType unsupported!\n");
+                log_parse_error("TODO: parsing OpaqueType unsupported!\n");
                 return {};
             }
             else if constexpr (std::is_same_v<T, EnumType>)
@@ -417,8 +420,9 @@ std::optional<Array> Parser::parse_complex_type_data(const ComplexType& type)
                     }
                     // TODO: validate the enum variable entry name ('Stratus' part)
                 }
-                fmt::print("Succesfully parsed enum type but not returning data. Now at token {}\n",
-                           peek()->content());
+                log_parse_error(
+                    fmt::format("Succesfully parsed enum type but not returning data. Now at token {}\n",
+                                peek()->content()));
                 // TODO: return actual EnumType data
                 return Array();
             }
@@ -428,7 +432,7 @@ std::optional<Array> Parser::parse_complex_type_data(const ComplexType& type)
                 auto start_bracket = pop_specific({"{"});
                 if (!start_bracket)
                 {
-                    fmt::print("Did not find start bracket when parsing type {}\n", arg.name);
+                    log_parse_error(fmt::format("Did not find start bracket when parsing type {}\n", arg.name));
                     return {};
                 }
                 Array array{};
@@ -486,8 +490,8 @@ std::optional<Array> Parser::parse_complex_type_data(const ComplexType& type)
                         break;
                     }
                 }
-                fmt::print("Succesfully parsed compound type but not returning data. Now at token {}\n",
-                           peek()->content());
+                log_parse_error(fmt::format("Succesfully parsed compound type but not returning data. Now at token {}\n",
+                           peek()->content()));
                 // TODO: return actual CompoundType data
                 return Array();
             }
