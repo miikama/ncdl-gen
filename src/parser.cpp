@@ -34,9 +34,16 @@ std::optional<const Token> Parser::peek()
     return m_tokens[m_cursor];
 }
 
-static std::vector<std::string> forbidden_identifiers{
-    "{", "}", "(", ")", "*", ":", ";", ",",
-};
+/**
+ * In addition, the characters `*  !"#$%&()*,:;<=>?[]^`´{}|~\' must
+ * be escaped if they occur anywhere in a name.   Note  also
+ * that  attribute  names  that  begin  with  an underscore (`_') are
+ * reserved for the use of Unidata and should not be used in user
+ * defined attributes.
+ */
+static std::vector<std::string> forbidden_identifiers{"!", "\"", "#", "$", "%", "&", "(", ")", "*",
+                                                      ",", ":",  ";", "<", "=", ">", "?", "[", "]",
+                                                      "^", "`",  "´", "{", "}", "|", "~", "\\"};
 
 std::optional<const Token> Parser::pop_identifier()
 {
@@ -270,10 +277,6 @@ std::optional<Number> Parser::parse_number(const NetCDFType& type)
     {
         switch (basic_type)
         {
-        case NetCDFElementaryType::Char:
-        {
-            return Number(std::stoi(number_string), NetCDFElementaryType::Char);
-        }
         case NetCDFElementaryType::Byte:
         {
             return Number(std::stoi(number_string), NetCDFElementaryType::Byte);
@@ -335,6 +338,61 @@ std::optional<Number> Parser::parse_number(const NetCDFType& type)
     {
         log_parse_error(fmt::format("Could not parse string '{}' as NetCDF type '{}'.\n", number_string,
                                     name_for_type(basic_type)));
+        return {};
+    }
+}
+std::optional<String> Parser::parse_string(const NetCDFType& type)
+{
+    auto token = pop();
+    if (!token)
+    {
+        return {};
+    }
+    auto string_data = std::string(token->content());
+
+    if (!std::holds_alternative<NetCDFElementaryType>(type.type))
+    {
+        log_parse_error(
+            fmt::format("Parsing string from user defined complex type '{}' is not supported", type.name()));
+        return {};
+    }
+    auto& basic_type = std::get<NetCDFElementaryType>(type.type);
+
+    /**
+     * The tokeniser leaves the quotes in the input token. This function tries to remove the quotes
+     * and only returns parser string if the quotes were successfully removed
+     */
+    if (string_data.size() < 2 || string_data.front() != '"' || string_data.back() != '"')
+    {
+        log_parse_error(
+            fmt::format("Parsing string requires input token to be quoted, '{}' was not", string_data));
+        return {};
+    }
+    string_data = string_data.substr(1, string_data.size() - 2);
+
+    switch (basic_type)
+    {
+    case NetCDFElementaryType::Char:
+    {
+        // NOTE: NetCDF cdl has all the text in UTF-8. This means that the characters present
+        // in cdl can be up to 4 code points long.
+        // Thus the 'length' of a single char is not always 1
+        if (string_data.size() > 4)
+        {
+            log_parse_error(fmt::format(
+                "Too many code points for parsing String of type 'char' from input '{}' with length {}",
+                string_data, string_data.size(), strlen(string_data.data())));
+            return {};
+        }
+        return String(std::move(string_data), NetCDFElementaryType::Char);
+    }
+    case NetCDFElementaryType::String:
+    {
+        return String(std::move(string_data), NetCDFElementaryType::String);
+    }
+    default:
+        log_parse_error(
+            fmt::format("Parsing string of NetCDF type '{}' is not supported", name_for_type(basic_type)));
         return {};
     }
 }
@@ -432,7 +490,8 @@ std::optional<Array> Parser::parse_complex_type_data(const ComplexType& type)
                 auto start_bracket = pop_specific({"{"});
                 if (!start_bracket)
                 {
-                    log_parse_error(fmt::format("Did not find start bracket when parsing type {}\n", arg.name));
+                    log_parse_error(
+                        fmt::format("Did not find start bracket when parsing type {}\n", arg.name));
                     return {};
                 }
                 Array array{};
@@ -490,8 +549,9 @@ std::optional<Array> Parser::parse_complex_type_data(const ComplexType& type)
                         break;
                     }
                 }
-                log_parse_error(fmt::format("Succesfully parsed compound type but not returning data. Now at token {}\n",
-                           peek()->content()));
+                log_parse_error(
+                    fmt::format("Succesfully parsed compound type but not returning data. Now at token {}\n",
+                                peek()->content()));
                 // TODO: return actual CompoundType data
                 return Array();
             }

@@ -44,6 +44,8 @@ std::optional<ComplexType> NetCDFType::as_complex_type() const
     }
 }
 
+std::string String::as_string() const { return value; }
+
 std::string Number::as_string() const
 {
     return std::visit([](auto&& arg) -> std::string { return fmt::format("{}", arg); }, value);
@@ -482,12 +484,20 @@ std::string Attribute::description(int indent) const
 
 std::string Attribute::string_data() const
 {
-    // Return the contents of the attribute if it was a string
-    if (std::holds_alternative<std::string>(m_value))
-    {
-        return std::get<std::string>(m_value);
-    }
-    return "";
+    return std::visit(
+        [&](auto&& arg) -> std::string
+        {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr (std::is_same_v<T, std::string>)
+            {
+                return std::get<std::string>(m_value);
+            }
+            else
+            {
+                return arg.as_string();
+            }
+        },
+        m_value);
 }
 
 std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFType> attribute_type)
@@ -560,7 +570,8 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
     }
     else if (attr.m_attribute_name == "_ChunkSizes" || attr.m_attribute_name == "_Storage" ||
              attr.m_attribute_name == "_Fletcher32" || attr.m_attribute_name == "_DeflateLevel" ||
-             attr.m_attribute_name == "_Endianness" || attr.m_attribute_name == "_NoFill")
+             attr.m_attribute_name == "_Endianness" || attr.m_attribute_name == "_NoFill" ||
+             attr.m_attribute_name == "_IsNetcdf4")
     {
         auto value = parser.pop();
         if (!value || value->content().empty())
@@ -568,6 +579,7 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
             return {};
         }
         // TODO: some of these are not just strings, like the chunksizes
+        attr.m_type = NetCDFElementaryType::String;
         attr.m_value = std::string(value->content());
     }
     else if (attr.m_attribute_name == "_FillValue")
@@ -579,7 +591,7 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
             return {};
         }
         attr.m_type = variable->basic_type();
-        auto fill_value = parser.parse_number(*attr.m_type);
+        auto fill_value = VariableData::parse(parser, *attr.m_type);
         if (!fill_value)
         {
             parser.log_parse_error("Could not parse value for attribute '_FillValue'");
@@ -622,20 +634,13 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
         // untyped global attributes
         if (!attr.m_type.has_value())
         {
-            auto value = parser.pop();
-            if (!value || value->content().empty())
-            {
-                parser.log_parse_error("Could not parse value for untyped global attribute");
-                return {};
-            }
             // Note: maybe untyped global attributes should not have a type
             // It just seems that the content is 'typically' free string,
-            // so why not make the type string as well
+            // so we make the type string as well
             attr.m_type = NetCDFElementaryType::String;
-            attr.m_value = std::string(value->content());
         }
+
         // typed global attributes
-        else
         {
             auto& type = attr.m_type.value();
             auto data = VariableData::parse(parser, type);
@@ -684,7 +689,14 @@ std::optional<VariableData> VariableData::parse(Parser& parser, const NetCDFType
             using T = std::decay_t<decltype(arg)>;
             if constexpr (std::is_same_v<T, NetCDFElementaryType>)
             {
-                return parser.parse_number(arg);
+                switch (arg)
+                {
+                case NetCDFElementaryType::String:
+                case NetCDFElementaryType::Char:
+                    return parser.parse_string(arg);
+                default:
+                    return parser.parse_number(arg);
+                }
             }
             else if constexpr (std::is_same_v<T, ComplexType>)
             {
@@ -910,7 +922,8 @@ void VariableSection::parse(Parser& parser, Group& group)
         auto line_end = parser.pop_specific({";"});
         if (!line_end)
         {
-            parser.log_parse_error(fmt::format("Could not find line end for variable data for variable {}\n", name->content()));
+            parser.log_parse_error(
+                fmt::format("Could not find line end for variable data for variable {}\n", name->content()));
             return;
         }
     }

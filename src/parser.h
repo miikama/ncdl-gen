@@ -31,6 +31,7 @@ class Parser
     std::optional<NetCDFType> peek_type();
 
     std::optional<Number> parse_number(const NetCDFType&);
+    std::optional<String> parse_string(const NetCDFType&);
     std::optional<Array> parse_data(const NetCDFType& type);
     std::optional<Array> parse_array(const NetCDFElementaryType& type);
     std::optional<Array> parse_complex_type_data(const ComplexType&);
