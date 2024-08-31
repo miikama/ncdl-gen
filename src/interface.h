@@ -12,8 +12,8 @@ struct Interface
 {
     using container_type_t = void;
 
-    template <typename ElementType, typename ContainerType>
-    static constexpr bool is_supported_ndarray(const ContainerType&)
+    template <typename ElementType, typename ContainerType, typename Enable = void>
+    static constexpr bool is_supported_ndarray()
     {
         return false;
     };

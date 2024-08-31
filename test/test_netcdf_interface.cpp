@@ -106,9 +106,10 @@ template <typename ElementType, std::size_t DimensionCount> struct vector_ND
 
 struct VectorNDInterface
 {
-    // 1D stl vector are supported
-    template <typename ElementType>
-    static constexpr bool is_supported_ndarray(const vector_ND<ElementType, 1>&)
+    // 1D is supported
+    template <typename ElementType, typename ContainerType,
+              std::enable_if_t<std::is_same_v<vector_ND<ElementType, 1>, ContainerType>, bool> = true>
+    static constexpr bool is_supported_ndarray()
     {
         return true;
     };

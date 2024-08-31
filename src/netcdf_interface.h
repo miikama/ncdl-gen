@@ -83,7 +83,7 @@ class NetCDFInterface
             }
         }
         // 1D container
-        else if constexpr (ContainerInterface::is_supported_ndarray(data))
+        else if constexpr (ContainerInterface::template is_supported_ndarray<ElementType, ContainerType>())
         {
             std::vector<std::size_t> count = variable_info.dimension_sizes;
             std::vector<std::size_t> start(count.size(), 0);
@@ -122,7 +122,7 @@ class NetCDFInterface
                 throw_error(fmt::format("nc_get_var ({})", full_path), ret);
             }
         }
-        else if constexpr (ContainerInterface::is_supported_ndarray(data))
+        else if constexpr (ContainerInterface::template is_supported_ndarray<ElementType, ContainerType>())
         {
             std::vector<std::size_t> count = variable_info.dimension_sizes;
             std::vector<std::size_t> start(count.size(), 0);
