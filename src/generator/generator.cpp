@@ -12,8 +12,9 @@
 namespace ncdlgen
 {
 
-std::string DefaultCustomisation::container_for_dimensions(const std::string_view& element_type_name,
-                                                const std::vector<ncdlgen::VariableDimension>& dimensions)
+std::string
+DefaultCustomisation::container_for_dimensions(const std::string_view& element_type_name,
+                                               const std::vector<ncdlgen::VariableDimension>& dimensions)
 {
     std::string full_name{element_type_name};
     for (auto& dimension : dimensions)
@@ -32,9 +33,10 @@ void Generator::dump_header(const ncdlgen::Group& group, int indent)
     for (auto& variable : group.variables())
     {
         auto indent_str_inner = fmt::format("{}{}", indent_str, std::string((indent + 1) * 2, ' '));
-        fmt::print("{}{} {};\n", indent_str_inner,
-                   options.container_for_dimensions(cpp_name_for_type(variable.basic_type()), variable.dimensions()),
-                   variable.name());
+        fmt::print(
+            "{}{} {};\n", indent_str_inner,
+            options.container_for_dimensions(cpp_name_for_type(variable.basic_type()), variable.dimensions()),
+            variable.name());
     }
 
     for (auto& sub_group : group.groups())

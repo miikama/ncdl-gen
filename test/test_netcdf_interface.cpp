@@ -38,7 +38,9 @@ TEST(interface, netcdf_simple)
                        "    ushort bee(dim);}}"};
     make_nc_from_cdl(cdl, "simple.nc");
 
-    NetCDFInterface interface{"simple.nc"};
+    NetCDFInterface interface {
+        "simple.nc"
+    };
 
     interface.open();
 
@@ -66,7 +68,9 @@ TEST(interface, netcdf_ndarray)
                        "}}"};
     make_nc_from_cdl(cdl, "ndarray.nc");
 
-    NetCDFInterface interface{"ndarray.nc"};
+    NetCDFInterface interface {
+        "ndarray.nc"
+    };
 
     interface.open();
 
@@ -132,7 +136,9 @@ struct VectorNDInterface
 TEST(interface, write_ND)
 {
     // Write data in VectorND format to the file
-    NetCDFInterface interface{"simple.nc"};
+    NetCDFInterface interface {
+        "simple.nc"
+    };
     interface.open();
 
     vector_ND<uint16_t, 1> data{{5}};

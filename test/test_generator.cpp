@@ -31,7 +31,9 @@ TEST(generator, basic)
                        "      ushort bee(dim);}}"};
     make_nc_from_cdl(cdl, "generated.nc");
 
-    ncdlgen::NetCDFInterface interface{"generated.nc"};
+    ncdlgen::NetCDFInterface interface {
+        "generated.nc"
+    };
     interface.open();
     ncdlgen::write(interface, root);
 
