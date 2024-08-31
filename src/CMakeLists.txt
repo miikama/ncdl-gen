@@ -15,7 +15,6 @@ set(SOURCES
 set(HEADERS
     equality.h
     interface.h
-    interface_support.h
     parser.h
     types.h
     logging.h
@@ -25,12 +24,6 @@ set(HEADERS
     interfaces/vector_interface.h
     generator/generator.h
     )
-
-
-add_library(ncdlgen ${SOURCES})
-
-# dependencies
-find_package(fmt REQUIRED)
 
 
 # Build netcdf files optionally (default = ON)
@@ -50,6 +43,11 @@ if(BUILD_NETCDF)
         )
 endif()
 
+# Create the ncdlgen library
+add_library(ncdlgen ${SOURCES})
+
+# Add dependencies to the library
+find_package(fmt REQUIRED)
 
 # during building, headers are in the original directories
 # during installation, all headers are put into a single directory
