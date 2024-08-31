@@ -13,8 +13,8 @@ Actually building `ncdlgen`
 ```sh
 mkdir build
 cd build
-conan install --build=missing  -s build_type=Release -s compiler.libcxx=libstdc++11 ..
-cmake -DCMAKE_INSTALL_PREFIX=~/ncdlgen -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake ..
+conan install --build=missing -of . ..
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=~/ncdlgen -DCMAKE_PREFIX_PATH=$(pwd) ..
 make -j6 && make install
 ```
 
@@ -149,7 +149,7 @@ cd <your-project-root>
 mkdir build
 cd build
 conan install ..
-cmake -DCMAKE_PREFIX_PATH="~/ncdlgen;$(pwd)" -DCMAKE_TOOLCHAIN_PATH=conan_toolchain.cmake ..
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$(pwd) -DCMAKE_INSTALL_PREFIX=~/ncdlgen -DCMAKE_TOOLCHAIN_PATH=conan_toolchain.cmake ..
 ```
 
 If you downloaded depencies manually, you can skip the `conan install`, leave out `-DCMAKE_TOOLCHAIN_PATH=conan_toolchain.cmake` and adding build directory to `CMAKE_PREFIX_PATH` parts.
