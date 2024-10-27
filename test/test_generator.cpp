@@ -18,7 +18,8 @@ static void make_nc_from_cdl(const std::string& cdl, const std::string& netcdf_f
 TEST(generator, basic)
 {
     // The name of the root group is the name
-    ncdlgen::simple::foo data{.bar = 5, .baz = 32, .bee = {1, 2, 3, 4, 5}};
+    ncdlgen::simple::foo data{
+        .bar = 5, .baz = 32, .bee = {1, 2, 3, 4, 5}, .foobar = {{1, 2, 3, 4, 5}, {1, 2, 3, 4, 5}}};
     ncdlgen::simple root{.foo_g = data};
 
     std::string cdl = {"netcdf simple {\n"
@@ -28,7 +29,8 @@ TEST(generator, basic)
                        "  variables:\n"
                        "      int bar;\n"
                        "      float baz;\n"
-                       "      ushort bee(dim);}}"};
+                       "      ushort bee(dim);\n"
+                       "      int foobar(dim, dim);}}"};
     make_nc_from_cdl(cdl, "generated.nc");
 
     ncdlgen::NetCDFInterface interface {

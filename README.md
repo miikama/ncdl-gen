@@ -44,6 +44,7 @@ netcdf simple {
             int bar ;
             float baz ;
             ushort bee(dim) ;
+            int foobar(dim, dim) ;
     }
 }
 ```
@@ -60,6 +61,7 @@ Group simple
           int bar
           float baz
           ushort bee (dim)
+          int foobar (dim, dim)
 ```
 
 ## Code generator
@@ -91,6 +93,7 @@ struct simple
       int bar;
       float baz;
       std::vector<ushort> bee;
+      std::vector<std::vector<int>> foobar;
   };
 
   foo foo_g{};

@@ -131,9 +131,7 @@ void assign(ContainerType& container, const std::vector<ElementType>& data)
 
 struct VectorInterface
 {
-    template <typename ElementType> using container_type_t = std::vector<ElementType>;
-
-    // 1D stl vector are supported
+    // ND stl vector are supported
     template <typename ElementType, typename ContainerType,
               std::enable_if_t<VectorOperations::is_vector_v<ContainerType>, bool> = true>
     static constexpr bool is_supported_ndarray()
@@ -141,10 +139,20 @@ struct VectorInterface
         return true;
     };
 
-    template <typename ElementType>
-    static constexpr std::size_t element_count(const std::vector<ElementType>& data)
+    template <typename ElementType, typename ContainerType>
+    static Data<ElementType> prepare(const std::vector<std::size_t>& dimension_sizes)
     {
-        return data.size();
+        Data<ElementType> data{};
+        data.dimension_sizes = dimension_sizes;
+        data.data.resize(VectorOperations::number_of_elements(dimension_sizes));
+        return data;
+    }
+
+    template <typename ElementType, typename ContainerType>
+    static void finalise(ContainerType& output, const Data<ElementType>& data)
+    {
+        VectorOperations::resize(output, data.dimension_sizes);
+        VectorOperations::assign(output, data.data);
     }
 
     template <typename ElementType>

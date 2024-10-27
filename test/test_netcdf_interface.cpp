@@ -77,11 +77,20 @@ TEST(interface, netcdf_ndarray)
     std::vector<double> data{1, 1, 1, 2, 2, 2};
     interface.write<std::vector<double>, double, VectorInterface>("/foo/bar", data);
 
-    auto read_data = interface.read<std::vector<double>, double, VectorInterface>("/foo/bar");
+    auto read_data = interface.read<std::vector<std::vector<double>>, double, VectorInterface>("/foo/bar");
 
     interface.close();
 
-    ASSERT_EQ(read_data.size(), 6);
+    ASSERT_EQ(read_data.size(), 3);
+    ASSERT_EQ(read_data[0].size(), 2);
+    ASSERT_EQ(read_data[1].size(), 2);
+    ASSERT_EQ(read_data[2].size(), 2);
+    ASSERT_EQ(read_data[0][0], 1);
+    ASSERT_EQ(read_data[0][1], 1);
+    ASSERT_EQ(read_data[1][0], 1);
+    ASSERT_EQ(read_data[1][1], 2);
+    ASSERT_EQ(read_data[2][0], 2);
+    ASSERT_EQ(read_data[2][1], 2);
 }
 
 /**
@@ -118,18 +127,20 @@ struct VectorNDInterface
         return true;
     };
 
-    template <typename ElementType>
-    static constexpr std::size_t element_count(const vector_ND<ElementType, 1>& data)
+    template <typename ElementType, typename ContainerType>
+    static Data<ElementType> prepare(const std::vector<std::size_t>& dimension_sizes)
     {
-        return data.size();
+        Data<ElementType> data{};
+        data.dimension_sizes = dimension_sizes;
+        data.data.resize(VectorOperations::number_of_elements(dimension_sizes));
+        return data;
     }
 
-    template <typename ElementType>
-    static constexpr void resize(vector_ND<ElementType, 1>& data,
-                                 const std::vector<std::size_t>& dimension_sizes)
+    template <typename ElementType, typename ContainerType>
+    static void finalise(ContainerType& output, const Data<ElementType>& data)
     {
-        assert(dimension_sizes.size() == 1);
-        data.resize(dimension_sizes);
+        VectorOperations::resize(output, data.dimension_sizes);
+        VectorOperations::assign(output, data.data);
     }
 };
 

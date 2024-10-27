@@ -8,9 +8,14 @@
 namespace ncdlgen
 {
 
+template <typename ElementType> struct Data
+{
+    std::vector<ElementType> data{};
+    std::vector<std::size_t> dimension_sizes{};
+};
+
 struct Interface
 {
-    using container_type_t = void;
 
     template <typename ElementType, typename ContainerType, typename Enable = void>
     static constexpr bool is_supported_ndarray()
@@ -19,16 +24,15 @@ struct Interface
     };
 
     template <typename ElementType, typename ContainerType>
-    static constexpr std::size_t element_count(const ContainerType& data)
+    static Data<ElementType> prepare(const std::vector<std::size_t>& dimension_sizes)
     {
-        static_assert(always_false_v<ContainerType>, "The element_count interface not implemented.");
-        return 0;
+        static_assert(always_false_v<ContainerType>, "The prepare interface not implemented.");
     }
 
     template <typename ElementType, typename ContainerType>
-    static void resize(ContainerType& data, const std::vector<std::size_t>& dimension_sizes)
+    static void finalise(ContainerType& output, Data<ElementType>& data)
     {
-        static_assert(always_false_v<ContainerType>, "The resize interface not implemented.");
+        static_assert(always_false_v<ContainerType>, "The finalise interface not implemented.");
     }
 };
 

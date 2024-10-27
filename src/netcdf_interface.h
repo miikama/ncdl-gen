@@ -128,14 +128,19 @@ class NetCDFInterface
             std::vector<std::size_t> start(count.size(), 0);
 
             // see https://stackoverflow.com/a/613132
-            // Let the compiler know that resize is a template
-            ContainerInterface::template resize<ElementType>(data, variable_info.dimension_sizes);
+            // Let the compiler know that prepare is a template
+            auto interface = ContainerInterface::template prepare<ElementType, ContainerType>(
+                variable_info.dimension_sizes);
 
-            if (auto ret =
-                    nc_get_vara(path.group_id, path.variable_id, start.data(), count.data(), data.data()))
+            if (auto ret = nc_get_vara(path.group_id, path.variable_id, start.data(), count.data(),
+                                       interface.data.data()))
             {
                 throw_error(fmt::format("nc_get_vara ({})", full_path), ret);
             }
+
+            // see https://stackoverflow.com/a/613132
+            // Let the compiler know that finalise is a template
+            ContainerInterface::template finalise<ElementType, ContainerType>(data, interface);
         }
         else
         {
