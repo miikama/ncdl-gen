@@ -12,11 +12,16 @@
 namespace ncdlgen
 {
 
-std::string_view
-Generator::container_for_dimensions(const std::vector<ncdlgen::VariableDimension>& dimensions)
+std::string
+DefaultCustomisation::container_for_dimensions(const std::string_view& element_type_name,
+                                               const std::vector<ncdlgen::VariableDimension>& dimensions)
 {
-    assert(dimensions.size() == 1);
-    return options.container_name;
+    std::string full_name{element_type_name};
+    for (auto& dimension : dimensions)
+    {
+        full_name = fmt::format("std::vector<{}>", full_name);
+    }
+    return full_name;
 }
 
 void Generator::dump_header(const ncdlgen::Group& group, int indent)
@@ -28,16 +33,12 @@ void Generator::dump_header(const ncdlgen::Group& group, int indent)
     for (auto& variable : group.variables())
     {
         auto indent_str_inner = fmt::format("{}{}", indent_str, std::string((indent + 1) * 2, ' '));
-        if (!variable.dimensions().empty())
-        {
-            fmt::print("{}{}<{}> {};\n", indent_str_inner, container_for_dimensions(variable.dimensions()),
-                       variable.type().name(), variable.name());
-        }
-        else
-        {
-            fmt::print("{}{} {};\n", indent_str_inner, variable.type().name(), variable.name());
-        }
+        fmt::print(
+            "{}{} {};\n", indent_str_inner,
+            options.container_for_dimensions(cpp_name_for_type(variable.basic_type()), variable.dimensions()),
+            variable.name());
     }
+
     for (auto& sub_group : group.groups())
     {
         dump_header(sub_group, indent + 1);
@@ -50,7 +51,8 @@ void Generator::dump_header(const ncdlgen::Group& group, int indent)
 void Generator::dump_header_reading(const ncdlgen::Group& group,
                                     const std::string_view fully_qualified_struct_name)
 {
-    fmt::print("void read({}& interface, {}&);\n\n", "NetCDFInterface", fully_qualified_struct_name);
+    fmt::print("void read({}& interface, {}&);\n\n", options.serialisation_interface,
+               fully_qualified_struct_name);
 
     for (auto& sub_group : group.groups())
     {
@@ -62,7 +64,8 @@ void Generator::dump_header_reading(const ncdlgen::Group& group,
 void Generator::dump_header_writing(const ncdlgen::Group& group,
                                     const std::string_view fully_qualified_struct_name)
 {
-    fmt::print("void write({}& interface, const {}&);\n\n", "NetCDFInterface", fully_qualified_struct_name);
+    fmt::print("void write({}& interface, const {}&);\n\n", options.serialisation_interface,
+               fully_qualified_struct_name);
 
     for (auto& sub_group : group.groups())
     {
@@ -90,24 +93,17 @@ void Generator::dump_source_read_group(const ncdlgen::Group& group, const std::s
     auto fully_qualified_struct_name = fmt::format("{}::{}", name_space_name, group.name());
     auto name_space_root = split_string(name_space_name, ':').at(0);
 
-    fmt::print("void {}::read({}& interface, {}& {}){{\n", name_space_root, "NetCDFInterface",
+    fmt::print("void {}::read({}& interface, {}& {}){{\n", name_space_root, options.serialisation_interface,
                fully_qualified_struct_name, group.name());
 
     for (auto& variable : group.variables())
     {
         auto full_path = fmt::format("{}/{}", group_path, variable.name());
-        if (variable.is_scalar())
-        {
-            fmt::print("  {}.{} = interface.read<{},{},{}>(\"{}\");\n", group.name(), variable.name(),
-                       variable.type().name(), variable.type().name(), "VectorInterface", full_path);
-        }
-        else
-        {
-            auto container_type_name =
-                fmt::format("{}::container_type_t<{}>", "VectorInterface", variable.type().name());
-            fmt::print("  {}.{} = interface.read<{},{},{}>(\"{}\");\n", group.name(), variable.name(),
-                       container_type_name, variable.type().name(), "VectorInterface", full_path);
-        }
+        auto container_type_name =
+            options.container_for_dimensions(cpp_name_for_type(variable.basic_type()), variable.dimensions());
+        fmt::print("  {}.{} = interface.read<{},{},{}>(\"{}\");\n", group.name(), variable.name(),
+                   container_type_name, cpp_name_for_type(variable.basic_type()), options.array_interface,
+                   full_path);
     }
 
     for (auto& sub_group : group.groups())
@@ -129,24 +125,17 @@ void Generator::dump_source_write_group(const ncdlgen::Group& group, const std::
     auto fully_qualified_struct_name = fmt::format("{}::{}", name_space_name, group.name());
     auto name_space_root = split_string(name_space_name, ':').at(0);
 
-    fmt::print("void {}::write({}& interface, const {}& data){{\n", name_space_root, "NetCDFInterface",
-               fully_qualified_struct_name);
+    fmt::print("void {}::write({}& interface, const {}& data){{\n", name_space_root,
+               options.serialisation_interface, fully_qualified_struct_name);
 
     for (auto& variable : group.variables())
     {
         auto full_path = fmt::format("{}/{}", group_path, variable.name());
-        if (variable.is_scalar())
-        {
-            fmt::print("  interface.write<{},{},{}>(\"{}\", data.{});\n", variable.type().name(),
-                       variable.type().name(), "VectorInterface", full_path, variable.name());
-        }
-        else
-        {
-            auto container_type_name =
-                fmt::format("{}::container_type_t<{}>", "VectorInterface", variable.type().name());
-            fmt::print("  interface.write<{},{},{}>(\"{}\", data.{});\n", container_type_name,
-                       variable.type().name(), "VectorInterface", full_path, variable.name());
-        }
+        auto container_type_name =
+            options.container_for_dimensions(cpp_name_for_type(variable.basic_type()), variable.dimensions());
+        fmt::print("  interface.write<{},{},{}>(\"{}\", data.{});\n", container_type_name,
+                   cpp_name_for_type(variable.basic_type()), options.array_interface, full_path,
+                   variable.name());
     }
 
     for (auto& sub_group : group.groups())
@@ -177,12 +166,20 @@ void Generator::dump_source(const ncdlgen::Group& group, const std::string_view 
 void Generator::dump_source_headers(const ncdlgen::Group& group)
 {
     fmt::print("#pragma once\n\n");
-    fmt::print("#include \"stdint.h\"\n");
+    for (auto& header : options.base_headers)
+    {
+        fmt::print("#include \"{}\"\n", header);
+    }
     fmt::print("\n");
-    fmt::print("#include <vector>\n");
+    for (auto& header : options.library_headers)
+    {
+        fmt::print("#include {}\n", header);
+    }
     fmt::print("\n");
-    fmt::print("#include \"netcdf_interface.h\"\n");
-    fmt::print("#include \"vector_interface.h\"\n");
+    for (auto& header : options.interface_headers)
+    {
+        fmt::print("#include \"{}\"\n", header);
+    }
     fmt::print("\n");
 }
 

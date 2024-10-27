@@ -9,5 +9,6 @@ netcdf simple {
             int bar ;
             float baz ;
             ushort bee(dim) ;
+            int foobar(dim, dim) ;
     }
 }

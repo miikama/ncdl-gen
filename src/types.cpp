@@ -13,7 +13,8 @@ namespace ncdlgen
 std::string_view NetCDFType::name() const
 {
     return std::visit(
-        [](auto&& arg) -> std::string_view {
+        [](auto&& arg) -> std::string_view
+        {
             using T = std::decay_t<decltype(arg)>;
             if constexpr (std::is_same_v<T, NetCDFElementaryType>)
             {
@@ -42,6 +43,8 @@ std::optional<ComplexType> NetCDFType::as_complex_type() const
         return std::get<ComplexType>(type);
     }
 }
+
+std::string String::as_string() const { return value; }
 
 std::string Number::as_string() const
 {
@@ -325,7 +328,7 @@ NetCDFElementaryType Variable::basic_type() const
     {
         return std::get<NetCDFElementaryType>(m_type.type);
     }
-    fmt::print("ERROR: Trying to retreive type from not basic type!\n");
+    fmt::print(stderr, "ERROR: Trying to retreive type from not basic type!\n");
     return NetCDFElementaryType::Default;
 }
 
@@ -402,22 +405,19 @@ std::string Variables::description(int indent) const
     return description.description;
 }
 
-std::optional<Variables> Variables::parse(Parser& parser)
+void Variables::parse(Parser& parser, Group& group)
 {
-    Variables variables{};
-    variables.m_name = "variables:";
-
     std::optional<NetCDFType> previous_type = {};
     while (auto variable = VariableDeclaration::parse(parser, previous_type))
     {
         if (std::holds_alternative<Variable>(*variable))
         {
-            variables.m_variables.push_back(std::get<Variable>(*variable));
+            group.variables().push_back(std::get<Variable>(*variable));
 
             // multiple variables in one line, continue to following
             if (parser.peek_specific({","}))
             {
-                previous_type = variables.m_variables.back().type();
+                previous_type = group.variables().back().type();
                 parser.pop();
             }
             else
@@ -427,21 +427,21 @@ std::optional<Variables> Variables::parse(Parser& parser)
         }
         else if (std::holds_alternative<Attribute>(*variable))
         {
-            variables.m_attributes.push_back(std::get<Attribute>(*variable));
+            group.attributes().push_back(std::get<Attribute>(*variable));
         }
         else
         {
             throw std::runtime_error("Incorrect type, this is bug.");
         }
     }
-    return variables;
 }
 
 std::string Attribute::as_string() const
 {
     // Use the visitor to go through all types
     return std::visit(
-        [](auto&& arg) -> std::string {
+        [](auto&& arg) -> std::string
+        {
             using T = std::decay_t<decltype(arg)>;
             if constexpr (std::is_same_v<T, std::string>)
             {
@@ -449,7 +449,7 @@ std::string Attribute::as_string() const
             }
             else if constexpr (std::is_same_v<T, ValidRangeValue>)
             {
-                return fmt::format("{} - {}", arg.start.as_string(), arg.end.as_string());
+                return fmt::format("[{}, {}]", arg.start.as_string(), arg.end.as_string());
             }
             else if constexpr (std::is_same_v<T, FillValueAttributeValue>)
             {
@@ -484,11 +484,20 @@ std::string Attribute::description(int indent) const
 
 std::string Attribute::string_data() const
 {
-    if (std::holds_alternative<std::string>(m_value))
-    {
-        return std::get<std::string>(m_value);
-    }
-    return "";
+    return std::visit(
+        [&](auto&& arg) -> std::string
+        {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr (std::is_same_v<T, std::string>)
+            {
+                return std::get<std::string>(m_value);
+            }
+            else
+            {
+                return arg.as_string();
+            }
+        },
+        m_value);
 }
 
 std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFType> attribute_type)
@@ -539,6 +548,16 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
     attr.m_attribute_name = split_str.second;
     attr.m_type = attribute_type;
 
+    // Try to find the variable this attribute corresponds to
+    auto variable = parser.resolve_variable_for_name(*attr.m_variable_name);
+    if (!variable && !is_global)
+    {
+        parser.log_parse_error(
+            fmt::format("Could not find variable '{}' when parsing non-global attribute '{}'",
+                        *attr.m_variable_name, attr.m_attribute_name));
+        return {};
+    }
+
     // Currently supported string attributes
     if (attr.m_attribute_name == "long_name" || attr.m_attribute_name == "units")
     {
@@ -549,10 +568,30 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
         }
         attr.m_value = std::string(value->content());
     }
+    else if (attr.m_attribute_name == "_ChunkSizes" || attr.m_attribute_name == "_Storage" ||
+             attr.m_attribute_name == "_Fletcher32" || attr.m_attribute_name == "_DeflateLevel" ||
+             attr.m_attribute_name == "_Endianness" || attr.m_attribute_name == "_NoFill" ||
+             attr.m_attribute_name == "_IsNetcdf4")
+    {
+        auto value = parser.pop();
+        if (!value || value->content().empty())
+        {
+            return {};
+        }
+        // TODO: some of these are not just strings, like the chunksizes
+        attr.m_type = NetCDFElementaryType::String;
+        attr.m_value = std::string(value->content());
+    }
     else if (attr.m_attribute_name == "_FillValue")
     {
-        // TODO: fetch type for untyped attributes from the corresponding variable
-        auto fill_value = parser.parse_number(attr.m_type.value_or(NetCDFElementaryType::Default));
+        // Get the fill value type from the variable
+        if (!variable)
+        {
+            parser.log_parse_error("No matching variable found when parsing attribute '_FillValue'");
+            return {};
+        }
+        attr.m_type = variable->basic_type();
+        auto fill_value = VariableData::parse(parser, *attr.m_type);
         if (!fill_value)
         {
             parser.log_parse_error("Could not parse value for attribute '_FillValue'");
@@ -560,12 +599,29 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
         }
         attr.m_value = *fill_value;
     }
+    else if (attr.m_attribute_name == "_Shuffle")
+    {
+        // TODO: Shuffle attribute is always Bool, but only parsed as string
+        auto value = parser.pop();
+        if (!value || value->content().empty())
+        {
+            parser.log_parse_error("Could not parse value for attribute '_Shuffle'");
+            return {};
+        }
+        attr.m_value = std::string(value->content());
+    }
     else if (attr.m_attribute_name == "valid_range")
     {
-        // TODO: fetch type for untyped attributes from the corresponding variable
-        auto start = parser.parse_number(attr.m_type.value_or(NetCDFElementaryType::Default));
+        // Get the valid range value type from the variable
+        if (!variable)
+        {
+            parser.log_parse_error("No matching variable found when parsing attribute 'valid_range'");
+            return {};
+        }
+        attr.m_type = variable->basic_type();
+        auto start = parser.parse_number(*attr.m_type);
         auto comma = parser.pop_specific({","});
-        auto end = parser.parse_number(attr.m_type.value_or(NetCDFElementaryType::Default));
+        auto end = parser.parse_number(*attr.m_type);
         if (!start || !comma || !end)
         {
             parser.log_parse_error("Could not parse value for attribute 'valid_range'");
@@ -578,27 +634,20 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
         // untyped global attributes
         if (!attr.m_type.has_value())
         {
-            auto value = parser.pop();
-            if (!value || value->content().empty())
-            {
-                parser.log_parse_error("Could not parse value for untyped global attribute");
-                return {};
-            }
             // Note: maybe untyped global attributes should not have a type
             // It just seems that the content is 'typically' free string,
-            // so why not make the type string as well
+            // so we make the type string as well
             attr.m_type = NetCDFElementaryType::String;
-            attr.m_value = std::string(value->content());
         }
+
         // typed global attributes
-        else
         {
             auto& type = attr.m_type.value();
             auto data = VariableData::parse(parser, type);
             if (!data)
             {
-                fmt::print("Parsing global attribute {} with type {} failed.\n", split_str.second,
-                           type.name());
+                parser.log_parse_error(fmt::format("Parsing global attribute {} with type {} failed.",
+                                                   split_str.second, type.name()));
                 return {};
             }
             attr.m_value = *data;
@@ -606,16 +655,22 @@ std::optional<Attribute> Attribute::parse(Parser& parser, std::optional<NetCDFTy
     }
     else
     {
-        parser.log_parse_error(fmt::format("Unsupported attribute '{}'\n", attr.m_attribute_name));
-        return {};
+        // TODO: For now, just parse everything thought to be attribute
+        auto value = parser.pop();
+        if (!value || value->content().empty())
+        {
+            return {};
+        }
+        // parser.log_parse_error(fmt::format("Unsupported attribute '{}'\n", attr.m_attribute_name));
+        attr.m_value = std::string(value->content());
     }
 
-    auto line_end = parser.pop_specific({";"});
+    auto line_end = parser.pop_until_specific({";"});
 
     if (!line_end)
     {
-        fmt::print("Could not find line end for variable definition for attribute {}\n",
-                   attr.m_attribute_name);
+        parser.log_parse_error(fmt::format(
+            "Could not find line end for variable definition for attribute {}\n", attr.m_attribute_name));
         return {};
     }
     return attr;
@@ -629,11 +684,19 @@ std::string VariableData::as_string() const
 std::optional<VariableData> VariableData::parse(Parser& parser, const NetCDFType& type)
 {
     return std::visit(
-        [&parser](auto&& arg) -> std::optional<VariableData> {
+        [&parser](auto&& arg) -> std::optional<VariableData>
+        {
             using T = std::decay_t<decltype(arg)>;
             if constexpr (std::is_same_v<T, NetCDFElementaryType>)
             {
-                return parser.parse_number(arg);
+                switch (arg)
+                {
+                case NetCDFElementaryType::String:
+                case NetCDFElementaryType::Char:
+                    return parser.parse_string(arg);
+                default:
+                    return parser.parse_number(arg);
+                }
             }
             else if constexpr (std::is_same_v<T, ComplexType>)
             {
@@ -691,7 +754,7 @@ VariableDeclaration::parse(Parser& parser, std::optional<NetCDFType> existing_ty
     auto name = parser.peek();
     if (!name)
     {
-        fmt::print("Did not find name for variable\n");
+        parser.log_parse_error("Did not find name for variable\n");
         return {};
     }
 
@@ -840,13 +903,15 @@ void VariableSection::parse(Parser& parser, Group& group)
         auto* variable = parser.resolve_variable_for_name(name->content());
         if (!variable)
         {
-            fmt::print("Could not resolve variable name {} in group {}\n", name->content(), group.name());
+            parser.log_parse_error(fmt::format("Could not resolve variable name {} in group {}\n",
+                                               name->content(), group.name()));
             return;
         }
         auto equals = parser.pop_specific({"="});
         if (!equals)
         {
-            fmt::print("Could not find equals for variable data for variable {}\n", name->content());
+            parser.log_parse_error(
+                fmt::format("Could not find equals for variable data for variable {}\n", name->content()));
             return;
         }
         auto data = parser.parse_data(variable->type());
@@ -857,7 +922,8 @@ void VariableSection::parse(Parser& parser, Group& group)
         auto line_end = parser.pop_specific({";"});
         if (!line_end)
         {
-            fmt::print("Could not find line end for variable data for variable {}\n", name->content());
+            parser.log_parse_error(
+                fmt::format("Could not find line end for variable data for variable {}\n", name->content()));
             return;
         }
     }
@@ -916,28 +982,35 @@ std::optional<Group> Group::parse(Parser& parser)
     group.m_name = group_name->content();
     parser.push_group_stack(group);
 
-    while (auto content = parser.pop())
+    while (auto content = parser.peek())
     {
-        parser.skip_extra_tokens();
-
         if (content->content() == "dimensions:")
         {
+            parser.pop();
             group.m_dimensions = Dimensions::parse(parser);
         }
         else if (content->content() == "types:")
         {
+            parser.pop();
             Types::parse(parser, group.m_types);
         }
         else if (content->content() == "data:")
         {
+            parser.pop();
             VariableSection::parse(parser, group);
         }
         else if (content->content() == "variables:")
         {
-            group.m_variables = Variables::parse(parser);
+            parser.pop();
+            if (!group.m_variables)
+            {
+                group.m_variables = Variables{};
+            }
+            Variables::parse(parser, group);
         }
         else if (content->content() == "group:")
         {
+            parser.pop();
             if (auto child_group = Group::parse(parser))
             {
                 group.m_groups.push_back(std::move(*child_group));
@@ -945,14 +1018,22 @@ std::optional<Group> Group::parse(Parser& parser)
         }
         else if (content->content() == "}")
         {
+            parser.pop();
             parser.pop_group_stack();
             return group;
         }
+        // try to parse things as attributes
         else
         {
-            parser.log_parse_error(
-                fmt::format("Unexpected token {} found for group {}", content->content(), group.m_name));
+            if (!group.m_variables)
+            {
+                group.m_variables = Variables{};
+            }
+            Variables::parse(parser, group);
         }
+
+        // Prepare a clean slate of tokens for the next iteration
+        parser.skip_extra_tokens();
     }
     parser.pop_group_stack();
     return {};

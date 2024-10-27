@@ -38,7 +38,9 @@ TEST(interface, netcdf_simple)
                        "    ushort bee(dim);}}"};
     make_nc_from_cdl(cdl, "simple.nc");
 
-    NetCDFInterface interface{"simple.nc"};
+    NetCDFInterface interface {
+        "simple.nc"
+    };
 
     interface.open();
 
@@ -66,18 +68,29 @@ TEST(interface, netcdf_ndarray)
                        "}}"};
     make_nc_from_cdl(cdl, "ndarray.nc");
 
-    NetCDFInterface interface{"ndarray.nc"};
+    NetCDFInterface interface {
+        "ndarray.nc"
+    };
 
     interface.open();
 
     std::vector<double> data{1, 1, 1, 2, 2, 2};
     interface.write<std::vector<double>, double, VectorInterface>("/foo/bar", data);
 
-    auto read_data = interface.read<std::vector<double>, double, VectorInterface>("/foo/bar");
+    auto read_data = interface.read<std::vector<std::vector<double>>, double, VectorInterface>("/foo/bar");
 
     interface.close();
 
-    ASSERT_EQ(read_data.size(), 6);
+    ASSERT_EQ(read_data.size(), 3);
+    ASSERT_EQ(read_data[0].size(), 2);
+    ASSERT_EQ(read_data[1].size(), 2);
+    ASSERT_EQ(read_data[2].size(), 2);
+    ASSERT_EQ(read_data[0][0], 1);
+    ASSERT_EQ(read_data[0][1], 1);
+    ASSERT_EQ(read_data[1][0], 1);
+    ASSERT_EQ(read_data[1][1], 2);
+    ASSERT_EQ(read_data[2][0], 2);
+    ASSERT_EQ(read_data[2][1], 2);
 }
 
 /**
@@ -106,32 +119,37 @@ template <typename ElementType, std::size_t DimensionCount> struct vector_ND
 
 struct VectorNDInterface
 {
-    // 1D stl vector are supported
-    template <typename ElementType>
-    static constexpr bool is_supported_ndarray(const vector_ND<ElementType, 1>&)
+    // 1D is supported
+    template <typename ElementType, typename ContainerType,
+              std::enable_if_t<std::is_same_v<vector_ND<ElementType, 1>, ContainerType>, bool> = true>
+    static constexpr bool is_supported_ndarray()
     {
         return true;
     };
 
-    template <typename ElementType>
-    static constexpr std::size_t element_count(const vector_ND<ElementType, 1>& data)
+    template <typename ElementType, typename ContainerType>
+    static Data<ElementType> prepare(const std::vector<std::size_t>& dimension_sizes)
     {
-        return data.size();
+        Data<ElementType> data{};
+        data.dimension_sizes = dimension_sizes;
+        data.data.resize(VectorOperations::number_of_elements(dimension_sizes));
+        return data;
     }
 
-    template <typename ElementType>
-    static constexpr void resize(vector_ND<ElementType, 1>& data,
-                                 const std::vector<std::size_t>& dimension_sizes)
+    template <typename ElementType, typename ContainerType>
+    static void finalise(ContainerType& output, const Data<ElementType>& data)
     {
-        assert(dimension_sizes.size() == 1);
-        data.resize(dimension_sizes);
+        VectorOperations::resize(output, data.dimension_sizes);
+        VectorOperations::assign(output, data.data);
     }
 };
 
 TEST(interface, write_ND)
 {
     // Write data in VectorND format to the file
-    NetCDFInterface interface{"simple.nc"};
+    NetCDFInterface interface {
+        "simple.nc"
+    };
     interface.open();
 
     vector_ND<uint16_t, 1> data{{5}};

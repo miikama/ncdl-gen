@@ -17,6 +17,7 @@ bool is_group_end(const std::string_view word);
 std::optional<NetCDFElementaryType> type_for_token(const Token& token);
 
 const std::string_view name_for_type(const NetCDFElementaryType& type);
+const std::string_view cpp_name_for_type(const NetCDFElementaryType& type);
 
 // clang-format off
 template <NetCDFElementaryType>

@@ -22,9 +22,11 @@ bool operator==(const ComplexType& type, const ComplexType& other_type)
 {
     // Iterate through all contained types of both argument types
     return std::visit(
-        [&other_type](auto&& own_type) -> bool {
+        [&other_type](auto&& own_type) -> bool
+        {
             return std::visit(
-                [&own_type](auto&& other_type) {
+                [&own_type](auto&& other_type)
+                {
                     using OwnType = std::decay_t<decltype(own_type)>;
                     using OtherType = std::decay_t<decltype(other_type)>;
 
@@ -49,9 +51,11 @@ bool operator==(const NetCDFType& type, const NetCDFType& other_type)
 {
     // Iterate through all contained types of both argument types
     return std::visit(
-        [&other_type](auto&& own_type) -> bool {
+        [&other_type](auto&& own_type) -> bool
+        {
             return std::visit(
-                [&own_type](auto&& other_type) {
+                [&own_type](auto&& other_type)
+                {
                     using OwnType = std::decay_t<decltype(own_type)>;
                     using OtherType = std::decay_t<decltype(other_type)>;
 

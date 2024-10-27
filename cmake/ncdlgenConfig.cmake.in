@@ -4,4 +4,8 @@ include("${CMAKE_CURRENT_LIST_DIR}/ncdlgenTargets.cmake")
 include(CMakeFindDependencyMacro)
 
 find_dependency(fmt)
-find_dependency(netCDF)
+
+set(BUILD_NETCDF ON CACHE BOOL "Whether to build netcdf dependencies (True) or not (False)")
+if (BUILD_NETCDF)
+    find_dependency(netCDF)
+endif()

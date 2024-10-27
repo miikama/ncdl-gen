@@ -92,6 +92,9 @@ TEST(parser, global_attributes)
                       "   variables:\n"
                       "      :untyped_global_attribute = \"global\";\n"
                       "      int :globalatt = 1;\n"
+                      "      char :charatt = \"a\";\n"
+                      "      char :charatt2 = \"�\";\n"
+                      "      :stratt = \"a�b\";\n"
                       "}"};
     auto input_tokens = tokens_from_string(input);
 
@@ -104,17 +107,120 @@ TEST(parser, global_attributes)
     ASSERT_EQ(variables.size(), 0);
 
     auto attributes = result->group->attributes();
-    ASSERT_EQ(attributes.size(), 2);
+    ASSERT_EQ(attributes.size(), 5);
     EXPECT_EQ(attributes[0].name(), "untyped_global_attribute");
     // Note: We give untyped attributes type of 'string'
     EXPECT_TRUE(attributes[0].type().has_value());
     EXPECT_EQ(attributes[0].type().value(), NetCDFElementaryType::String);
-    EXPECT_EQ(attributes[0].string_data(), std::string("\"global\""));
+    EXPECT_EQ(attributes[0].string_data(), std::string("global"));
 
     EXPECT_EQ(attributes[1].name(), "globalatt");
     EXPECT_TRUE(attributes[1].type().has_value());
     EXPECT_EQ(attributes[1].type().value(), NetCDFType(NetCDFElementaryType::Int));
-    EXPECT_EQ(attributes[1].string_data(), std::string(""));
+    EXPECT_EQ(attributes[1].string_data(), std::string("1"));
+
+    EXPECT_EQ(attributes[2].name(), "charatt");
+    EXPECT_TRUE(attributes[2].type().has_value());
+    EXPECT_EQ(attributes[2].type().value(), NetCDFType(NetCDFElementaryType::Char));
+    EXPECT_EQ(attributes[2].string_data(), std::string("a"));
+
+    EXPECT_EQ(attributes[3].name(), "charatt2");
+    EXPECT_TRUE(attributes[3].type().has_value());
+    EXPECT_EQ(attributes[3].type().value(), NetCDFType(NetCDFElementaryType::Char));
+    EXPECT_EQ(attributes[3].string_data(), std::string("�"));
+
+    EXPECT_EQ(attributes[4].name(), "stratt");
+    EXPECT_TRUE(attributes[4].type().has_value());
+    EXPECT_EQ(attributes[4].type().value(), NetCDFType(NetCDFElementaryType::String));
+    EXPECT_EQ(attributes[4].string_data(), std::string("a�b"));
+}
+
+TEST(parser, attributes)
+{
+    std::string input{"netcdf foo {\n"
+                      "   variables:\n"
+                      "      int foo;\n"
+                      "      foo:_FillValue = 1;\n"
+                      "      float bar;\n"
+                      "      bar:_FillValue = 1.4;\n"
+                      "      bar:valid_range = 1.0, 2.5;\n"
+                      "}"};
+    auto input_tokens = tokens_from_string(input);
+
+    Parser parser{input_tokens};
+    auto result = parser.parse();
+    ASSERT_TRUE(result.has_value());
+
+    ASSERT_TRUE(result->group);
+    auto variables = result->group->variables();
+    ASSERT_EQ(variables.size(), 2);
+
+    auto attributes = result->group->attributes();
+    ASSERT_EQ(attributes.size(), 3);
+
+    // foo attributes
+    EXPECT_EQ(attributes[0].name(), "_FillValue");
+    EXPECT_TRUE(attributes[0].type().has_value());
+    EXPECT_EQ(attributes[0].type().value(), NetCDFType(NetCDFElementaryType::Int));
+    EXPECT_EQ(attributes[0].as_string(), "1");
+
+    // bar attributes
+    EXPECT_EQ(attributes[1].name(), "_FillValue");
+    EXPECT_TRUE(attributes[1].type().has_value());
+    EXPECT_EQ(attributes[1].type().value(), NetCDFType(NetCDFElementaryType::Float));
+    EXPECT_EQ(attributes[1].as_string(), "1.4");
+    EXPECT_EQ(attributes[2].name(), "valid_range");
+    EXPECT_TRUE(attributes[2].type().has_value());
+    EXPECT_EQ(attributes[2].type().value(), NetCDFType(NetCDFElementaryType::Float));
+    EXPECT_EQ(attributes[2].as_string(), "[1, 2.5]");
+}
+
+TEST(parser, root_global_attributes)
+{
+    std::string input{"netcdf foo {\n"
+                      "      int :global_typed_attribute = 1;\n"
+                      "      :_NCProperties = \"version=2,netcdf=4.8.1\";\n"
+                      "      :_IsNetcdf4 = 1 ;\n"
+                      "      :_Format = \"netCDF-4\" ;\n"
+                      "   variables:\n"
+                      "     float bar;\n"
+                      "}"};
+    auto input_tokens = tokens_from_string(input);
+
+    Parser parser{input_tokens};
+    auto result = parser.parse();
+    ASSERT_TRUE(result.has_value());
+
+    ASSERT_TRUE(result->group);
+    auto variables = result->group->variables();
+    ASSERT_EQ(variables.size(), 1);
+
+    auto attributes = result->group->attributes();
+    ASSERT_EQ(attributes.size(), 4);
+
+    // int :global_typed_attribute = 1;
+    EXPECT_EQ(attributes[0].name(), "global_typed_attribute");
+    EXPECT_TRUE(attributes[0].type().has_value());
+    EXPECT_EQ(attributes[0].type().value(), NetCDFType(NetCDFElementaryType::Int));
+    EXPECT_EQ(attributes[0].as_string(), "1");
+
+    // :_NCProperties = \"version=2,netcdf=4.8.1\"
+    EXPECT_EQ(attributes[1].name(), "_NCProperties");
+    EXPECT_TRUE(attributes[1].type().has_value());
+    EXPECT_EQ(attributes[1].type().value(), NetCDFType(NetCDFElementaryType::String));
+    EXPECT_EQ(attributes[1].as_string(), "version=2,netcdf=4.8.1");
+
+    // :_IsNetcdf4 = 1
+    EXPECT_EQ(attributes[2].name(), "_IsNetcdf4");
+    EXPECT_TRUE(attributes[2].type().has_value());
+    EXPECT_EQ(attributes[2].type().value(), NetCDFType(NetCDFElementaryType::String));
+    EXPECT_EQ(attributes[2].as_string(), "1");
+
+    // :_Format = \"netCDF-4\"
+    EXPECT_EQ(attributes[3].name(), "_Format");
+    EXPECT_TRUE(attributes[3].type().has_value());
+    EXPECT_EQ(attributes[3].type().value(), NetCDFType(NetCDFElementaryType::String));
+    EXPECT_EQ(attributes[3].as_string(), "netCDF-4");
 }
 
 TEST(parser, variables)

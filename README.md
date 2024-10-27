@@ -13,8 +13,8 @@ Actually building `ncdlgen`
 ```sh
 mkdir build
 cd build
-conan install --build=missing  -s build_type=Release -s compiler.libcxx=libstdc++11 ..
-cmake -DCMAKE_INSTALL_PREFIX=~/ncdlgen -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake ..
+conan install --build=missing -of . ..
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=~/ncdlgen -DCMAKE_PREFIX_PATH=$(pwd) ..
 make -j6 && make install
 ```
 
@@ -44,6 +44,7 @@ netcdf simple {
             int bar ;
             float baz ;
             ushort bee(dim) ;
+            int foobar(dim, dim) ;
     }
 }
 ```
@@ -60,6 +61,7 @@ Group simple
           int bar
           float baz
           ushort bee (dim)
+          int foobar (dim, dim)
 ```
 
 ## Code generator
@@ -91,6 +93,7 @@ struct simple
       int bar;
       float baz;
       std::vector<ushort> bee;
+      std::vector<std::vector<int>> foobar;
   };
 
   foo foo_g{};
@@ -149,7 +152,7 @@ cd <your-project-root>
 mkdir build
 cd build
 conan install ..
-cmake -DCMAKE_PREFIX_PATH="~/ncdlgen;$(pwd)" -DCMAKE_TOOLCHAIN_PATH=conan_toolchain.cmake ..
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$(pwd) -DCMAKE_INSTALL_PREFIX=~/ncdlgen -DCMAKE_TOOLCHAIN_PATH=conan_toolchain.cmake ..
 ```
 
 If you downloaded depencies manually, you can skip the `conan install`, leave out `-DCMAKE_TOOLCHAIN_PATH=conan_toolchain.cmake` and adding build directory to `CMAKE_PREFIX_PATH` parts.
@@ -174,6 +177,26 @@ docker run --rm -it -v $(pwd):/home/$(whoami) ncdgen bash
 ```
 
 This mounts the repository at the home directory of the container user.
+
+## Changelist
+
+Main features for each release
+
+0.1.0
+
+- Initial relase with NetCDF cdl parser
+- Code generator for generating code for interface reading/writing
+
+0.2.0
+
+- Support Conan 2
+- Support multidimensional containers in interfaces
+- Support multidimensional containers in code generation
+- Update gtest version
+- Improve code generation configurability
+- Support global attributes outside of variables: section
+- Resolve untyped attribute types by finding corresponding variable
+- Make NetCDF and optional dependency
 
 ## Building VSCode extension
 

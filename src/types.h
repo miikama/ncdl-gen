@@ -62,6 +62,16 @@ struct Dimensions
     std::vector<Dimension> dimensions{};
 };
 
+struct String
+{
+    String(std::string value, NetCDFElementaryType type) : value(std::move(value)), netcdf_type(type) {}
+
+    std::string as_string() const;
+
+    std::string value{};
+    NetCDFElementaryType netcdf_type{NetCDFElementaryType::Default};
+};
+
 struct Number
 {
 
@@ -91,11 +101,12 @@ struct VariableData
     static std::optional<VariableData> parse(Parser&, const NetCDFType& type);
 
     VariableData(const Number& number) : data(number) {}
+    VariableData(const String& data) : data(data) {}
     VariableData(const Array& array) : data(array) {}
 
     std::string as_string() const;
 
-    std::variant<Number, Array> data;
+    std::variant<Number, String, Array> data;
 };
 
 class Element
@@ -212,6 +223,8 @@ struct ValidRangeValue
 {
     Number start;
     Number end;
+
+    std::string as_string() const { return "[" + start.as_string() + ", " + end.as_string() + "]"; }
 };
 using FillValueAttributeValue = Number;
 
@@ -284,7 +297,7 @@ class Variables : public Element
   public:
     std::string description(int indent) const override;
 
-    static std::optional<Variables> parse(Parser&);
+    static void parse(Parser&, Group&);
 
     std::vector<Variable>& variables() { return m_variables; }
     const std::vector<Variable>& variables() const { return m_variables; }
