@@ -178,6 +178,26 @@ docker run --rm -it -v $(pwd):/home/$(whoami) ncdgen bash
 
 This mounts the repository at the home directory of the container user.
 
+## Changelist
+
+Main features for each release
+
+0.1.0
+
+- Initial relase with NetCDF cdl parser
+- Code generator for generating code for interface reading/writing
+
+0.2.0
+
+- Support Conan 2
+- Support multidimensional containers in interfaces
+- Support multidimensional containers in code generation
+- Update gtest version
+- Improve code generation configurability
+- Support global attributes outside of variables: section
+- Resolve untyped attribute types by finding corresponding variable
+- Make NetCDF and optional dependency
+
 ## Building VSCode extension
 
 Official guides
