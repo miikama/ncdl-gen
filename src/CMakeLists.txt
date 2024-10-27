@@ -8,6 +8,7 @@ set(SOURCES
     syntax.cpp
     utils.cpp
     equality.cpp
+    interfaces/vector_interface.cpp
     generator/generator.cpp
 )
 

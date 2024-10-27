@@ -43,6 +43,7 @@ add_executable(test_cases test_main.cpp
                test_parser.cpp
                test_common.cpp
                test_types.cpp
+               test_vector_interface.cpp
                ${NETCDF_TESTS}
                )
 target_include_directories(test_cases PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
