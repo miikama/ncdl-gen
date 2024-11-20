@@ -29,6 +29,14 @@ if(BUILD_NETCDF)
         )
 endif()
 
+# Make zeromq dependent test cases optional
+if(BUILD_ZEROMQ)
+
+    set(ZEROMQ_TESTS
+        ${GENERATED_SOURCES}
+        )
+endif()
+
 
 # Locate GTest
 find_package(GTest QUIET)
@@ -45,6 +53,7 @@ add_executable(test_cases test_main.cpp
                test_types.cpp
                test_vector_interface.cpp
                ${NETCDF_TESTS}
+               ${ZEROMQ_TESTS}
                )
 target_include_directories(test_cases PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 

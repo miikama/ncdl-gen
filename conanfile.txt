@@ -2,6 +2,7 @@
  fmt/9.1.0
  gtest/1.15.0
  netcdf/4.8.1
+ cppzmq/4.10.0
 
 [generators]
  CMakeDeps
@@ -9,3 +10,6 @@
 
 [options]
  gtest/*:shared=True
+
+[layout]
+ cmake_layout

@@ -44,6 +44,20 @@ if(BUILD_NETCDF)
         )
 endif()
 
+# Build zeromq files optionally (default = ON)
+set(BUILD_ZEROMQ ON CACHE BOOL "Whether to build zeromq dependencies (True) or not (False)")
+set(ZEROMQ_TARGET "")
+if(BUILD_ZEROMQ)
+    find_package(cppzmq REQUIRED)
+    set(ZEROMQ_TARGET "cppzmq")
+
+    set(SOURCES ${SOURCES}
+        )
+
+    set(HEADERS ${HEADERS}
+        )
+endif()
+
 # Create the ncdlgen library
 add_library(ncdlgen ${SOURCES})
 
@@ -59,7 +73,7 @@ target_include_directories(ncdlgen PUBLIC
                                         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/generator>
                                         $<INSTALL_INTERFACE:include>)
 target_compile_features(ncdlgen PUBLIC cxx_std_17)
-target_link_libraries(ncdlgen PUBLIC fmt::fmt ${NETCDF_TARGET})
+target_link_libraries(ncdlgen PUBLIC fmt::fmt ${NETCDF_TARGET} ${ZEROMQ_TARGET})
 
 # Add parser executable
 add_executable(parser main.cpp)
