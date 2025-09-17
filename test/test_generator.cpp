@@ -33,15 +33,13 @@ TEST(generator, basic)
                        "      int foobar(dim, dim);}}"};
     make_nc_from_cdl(cdl, "generated.nc");
 
-    ncdlgen::NetCDFInterface interface {
-        "generated.nc"
-    };
-    interface.open();
-    ncdlgen::write(interface, root);
+    ncdlgen::NetCDFPipe pipe{"generated.nc"};
+    pipe.open();
+    ncdlgen::write(pipe, root);
 
     ncdlgen::simple read_root;
-    read(interface, read_root);
-    interface.close();
+    read(pipe, read_root);
+    pipe.close();
 
     EXPECT_EQ(read_root.foo_g.bar, 5);
     EXPECT_EQ(read_root.foo_g.baz, 32);

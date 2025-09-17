@@ -1,6 +1,6 @@
 #pragma once
 
-#include "netcdf_interface.h"
+#include "pipes/netcdf_pipe.h"
 #include "stdint.h"
 
 #include <vector>
@@ -23,12 +23,12 @@ struct simple
     foo foo_g{};
 };
 
-void read(NetCDFInterface& interface, simple&);
+void read(NetCDFPipe& pipe, simple&);
 
-void read(NetCDFInterface& interface, simple::foo&);
+void read(NetCDFPipe& pipe, simple::foo&);
 
-void write(NetCDFInterface& interface, const simple&);
+void write(NetCDFPipe& pipe, const simple&);
 
-void write(NetCDFInterface& interface, const simple::foo&);
+void write(NetCDFPipe& pipe, const simple::foo&);
 
 }; // namespace ncdlgen

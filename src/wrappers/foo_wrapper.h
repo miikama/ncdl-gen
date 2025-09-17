@@ -4,7 +4,7 @@
 #include "stdint.h"
 #include <vector>
 
-#include "netcdf_interface.h"
+#include "pipes/netcdf_pipe.h"
 #include "utils.h"
 #include "vector_interface.h"
 
@@ -18,8 +18,11 @@ struct foo
     std::vector<uint16_t> bee;
 };
 
-void write(NetCDFInterface& interface, const foo&);
+// Create member accessor that iterates over members to
+// allow serialization one field at a time
 
-template <typename StructureType> StructureType read(NetCDFInterface& interface);
+void write(NetCDFPipe& pipe, const foo&);
+
+template <typename StructureType> StructureType read(NetCDFPipe& pipe);
 
 } // namespace ncdlgen

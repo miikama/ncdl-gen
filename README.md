@@ -16,6 +16,13 @@ cd build
 conan install --build=missing -of . ..
 cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=~/ncdlgen -DCMAKE_PREFIX_PATH=$(pwd) ..
 make -j6 && make install
+
+
+# with conan 2.7, it seems that the following is the magic command 
+conan install .  --build=missing
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=~/ncdlgen -DCMAKE_PREFIX_PATH=$(pwd)/Release/generators ..
+make -j6 && make install
 ```
 
 Note the usage of conan toolchain file which creates all the required packageConfig.cmake files in the build directory for finding the dependencies. It is also possible to manually download all the primary and transitive dependencies without Conan. Currently primary dependencies are
@@ -81,7 +88,7 @@ results in the following generated code
 
 #include <vector>
 
-#include "netcdf_interface.h"
+#include "netcdf_pipe.h"
 #include "vector_interface.h"
 
 namespace ncdlgen {
@@ -99,13 +106,13 @@ struct simple
   foo foo_g{};
 };
 
-void read(NetCDFInterface& interface, simple&);
+void read(NetCDFPipe& pipe, simple&);
 
-void read(NetCDFInterface& interface, simple::foo&);
+void read(NetCDFPipe& pipe, simple::foo&);
 
-void write(NetCDFInterface& interface, const simple&);
+void write(NetCDFPipe& pipe, const simple&);
 
-void write(NetCDFInterface& interface, const simple::foo&);
+void write(NetCDFPipe& pipe, const simple::foo&);
 
 };
 ```
@@ -116,15 +123,15 @@ Which can be used to read/write the contents of the entire file or its subgroups
 #include "generated_simple.h"
 
 ncdlgen::simple root;
-ncdlgen::NetCDFInterface interface{"generated.nc"};
-interface.open();
+ncdlgen::NetCDFPipe pipe{"generated.nc"};
+pipe.open();
 
 // Write contents of 'simple' struct to a netcdf file
-ncdlgen::write(interface, root);
+ncdlgen::write(pipe, root);
 
 // Read the contents of a netcdf file into 'simple' struct
-read(interface, root);
-interface.close();
+read(pipe, root);
+pipe.close();
 ```
 
 ## ncdlgen as dependency

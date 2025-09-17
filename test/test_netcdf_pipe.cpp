@@ -8,7 +8,7 @@
 #include <gtest/gtest.h>
 
 #include "foo_wrapper.h"
-#include "netcdf_interface.h"
+#include "pipes/netcdf_pipe.h"
 #include "vector_interface.h"
 
 using namespace ncdlgen;
@@ -23,7 +23,7 @@ static void make_nc_from_cdl(const std::string& cdl, const std::string& netcdf_f
     }
 }
 
-TEST(interface, netcdf_simple)
+TEST(pipe, netcdf_simple)
 {
 
     foo data{.bar = 5, .baz = 32, .bee = {1, 2, 3, 4, 5}};
@@ -38,24 +38,22 @@ TEST(interface, netcdf_simple)
                        "    ushort bee(dim);}}"};
     make_nc_from_cdl(cdl, "simple.nc");
 
-    NetCDFInterface interface {
-        "simple.nc"
-    };
+    NetCDFPipe pipe{"simple.nc"};
 
-    interface.open();
+    pipe.open();
 
-    write(interface, data);
+    write(pipe, data);
 
-    auto read_data = read<foo>(interface);
+    auto read_data = read<foo>(pipe);
 
-    interface.close();
+    pipe.close();
 
     EXPECT_EQ(data.bar, read_data.bar);
     EXPECT_EQ(data.baz, read_data.baz);
     EXPECT_EQ(data.bee, read_data.bee);
 }
 
-TEST(interface, netcdf_ndarray)
+TEST(pipe, netcdf_ndarray)
 {
 
     std::string cdl = {"netcdf simple {\n"
@@ -68,18 +66,16 @@ TEST(interface, netcdf_ndarray)
                        "}}"};
     make_nc_from_cdl(cdl, "ndarray.nc");
 
-    NetCDFInterface interface {
-        "ndarray.nc"
-    };
+    NetCDFPipe pipe{"ndarray.nc"};
 
-    interface.open();
+    pipe.open();
 
     std::vector<double> data{1, 1, 1, 2, 2, 2};
-    interface.write<std::vector<double>, double, VectorInterface>("/foo/bar", data);
+    pipe.write<std::vector<double>, double, VectorInterface>("/foo/bar", data);
 
-    auto read_data = interface.read<std::vector<std::vector<double>>, double, VectorInterface>("/foo/bar");
+    auto read_data = pipe.read<std::vector<std::vector<double>>, double, VectorInterface>("/foo/bar");
 
-    interface.close();
+    pipe.close();
 
     ASSERT_EQ(read_data.size(), 3);
     ASSERT_EQ(read_data[0].size(), 2);
@@ -144,13 +140,11 @@ struct VectorNDInterface
     }
 };
 
-TEST(interface, write_ND)
+TEST(pipe, write_ND)
 {
     // Write data in VectorND format to the file
-    NetCDFInterface interface {
-        "simple.nc"
-    };
-    interface.open();
+    NetCDFPipe pipe{"simple.nc"};
+    pipe.open();
 
     vector_ND<uint16_t, 1> data{{5}};
     *data.data() = 1;
@@ -159,12 +153,12 @@ TEST(interface, write_ND)
     *(data.data() + 3) = 66;
     *(data.data() + 4) = 5;
 
-    interface.write<vector_ND<uint16_t, 1>, uint16_t, VectorNDInterface>("/foo/bee", data);
+    pipe.write<vector_ND<uint16_t, 1>, uint16_t, VectorNDInterface>("/foo/bee", data);
 
     // Read data using already existing interface to make sure
     // writing went ok.
-    auto foo = read<ncdlgen::foo>(interface);
-    interface.close();
+    auto foo = read<ncdlgen::foo>(pipe);
+    pipe.close();
 
     ASSERT_EQ(foo.bee.size(), 5);
     EXPECT_EQ(foo.bee[0], 1);

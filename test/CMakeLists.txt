@@ -23,7 +23,7 @@ set(GENERATED_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.cpp)
 if(BUILD_NETCDF)
 
     set(NETCDF_TESTS
-        test_netcdf_interface.cpp
+        test_netcdf_pipe.cpp
         test_generator.cpp
         ${GENERATED_SOURCES}
         )

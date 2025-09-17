@@ -15,7 +15,7 @@ set(SOURCES
 # only include public headers here
 set(HEADERS
     equality.h
-    interface.h
+    interfaces/interface.h
     parser.h
     types.h
     logging.h
@@ -35,12 +35,12 @@ if(BUILD_NETCDF)
     set(NETCDF_TARGET "netCDF::netcdf")
 
     set(SOURCES ${SOURCES}
-        netcdf_interface.cpp
+        pipes/netcdf_pipe.cpp
         wrappers/foo_wrapper.cpp
         )
 
     set(HEADERS ${HEADERS}
-        netcdf_interface.h
+        pipes/netcdf_pipe.h
         )
 endif()
 
