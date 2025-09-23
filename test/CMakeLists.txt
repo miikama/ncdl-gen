@@ -33,6 +33,7 @@ endif()
 if(BUILD_ZEROMQ)
 
     set(ZEROMQ_TESTS
+        test_zeromq_pipe.cpp
         ${GENERATED_SOURCES}
         )
 endif()

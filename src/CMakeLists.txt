@@ -52,9 +52,11 @@ if(BUILD_ZEROMQ)
     set(ZEROMQ_TARGET "cppzmq")
 
     set(SOURCES ${SOURCES}
+        pipes/zeromq_pipe.cpp
         )
 
     set(HEADERS ${HEADERS}
+        pipes/zeromq_pipe.h
         )
 endif()
 
