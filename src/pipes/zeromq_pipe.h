@@ -21,35 +21,62 @@ struct ZeroMQVariableInfo
     static ZeroMQVariableInfo from_string_view(const std::string_view);
 };
 
+template <typename ContainerType, typename ElementType, typename ContainerInterface>
+zmq::message_t message_for_type(const ContainerType& data)
 {
-
-    if constexpr (std::is_fundamental_v<T>)
+    if constexpr (std::is_fundamental_v<ContainerType>)
     {
+        auto msg = zmq::message_t(&data, sizeof(ElementType));
+        return msg;
+    }
+    else if constexpr (ContainerInterface::template is_supported_ndarray<ElementType, ContainerType>())
+    {
+        auto flat_data = ContainerInterface::template prepare<ElementType, ContainerType>(data);
 
-        auto msg = zmq::message_t(&data, sizeof(T));
+        auto msg = zmq::message_t(flat_data.data.data(), flat_data.data.size() * sizeof(ElementType));
         return msg;
     }
     else
     {
-        static_assert(always_false_v<T>, "unsupported type");
+        static_assert(always_false_v<ElementType>, "unsupported type");
     }
 }
 
-template <typename T> T data_from_message(const zmq::message_t& message)
+template <typename ContainerType, typename ElementType, typename ContainerInterface>
+ContainerType data_from_message(const zmq::message_t& message, const ZeroMQVariableInfo& variable_info)
 {
-    if constexpr (std::is_fundamental_v<T>)
+    if constexpr (std::is_fundamental_v<ContainerType>)
     {
-        if (message.size() != sizeof(T))
+        if (message.size() != sizeof(ElementType))
         {
             throw std::runtime_error(
                 fmt::format("Incorrect size of input scalar message, expected size {}, received size {}",
-                            sizeof(T), message.size()));
+                            sizeof(ElementType), message.size()));
         }
-        return *message.data<T>();
+        return *message.data<ElementType>();
+    }
+    else if constexpr (ContainerInterface::template is_supported_ndarray<ElementType, ContainerType>())
+    {
+        auto flat_data =
+            ContainerInterface::template prepare<ElementType, ContainerType>(variable_info.dimension_sizes);
+
+        if (message.size() != sizeof(ElementType) * flat_data.data.size())
+        {
+            throw std::runtime_error(
+                fmt::format("Incorrect size of input vector message, expected size {}, received size {}",
+                            sizeof(ElementType) * flat_data.data.size(), message.size()));
+        }
+        auto data_ptr = message.data<ElementType>();
+        flat_data.data.assign(data_ptr, data_ptr + message.size());
+
+        // Format data from buffer to final container
+        ContainerType data{};
+        ContainerInterface::template finalise<ElementType, ContainerType>(data, flat_data);
+        return data;
     }
     else
     {
-        static_assert(always_false_v<T>, "unsupported type");
+        static_assert(always_false_v<ElementType>, "unsupported type");
     }
 }
 
@@ -82,21 +109,23 @@ class ZeroMQPipe
     {
         validate_name(full_path);
 
+        auto data_size =
+            VectorOperations::template container_dimension_sizes<ElementType, ContainerType>(data);
+        ZeroMQVariableInfo variable_info{std::string(full_path), data_size};
+        auto info_string = variable_info.to_string();
 
-            if (!m_outbound_socket.send(id_message, zmq::send_flags::sndmore))
-            {
-                throw std::runtime_error(
-                    fmt::format("Error sending a message with id {} with zeromq.", full_path));
-            }
-            if (!m_outbound_socket.send(data_message, zmq::send_flags::none))
-            {
-                throw std::runtime_error(
-                    fmt::format("Error sending a data message with id {} with zeromq.", full_path));
-            }
-        }
-        else
+        auto id_message = zmq::message_t(info_string.data(), info_string.size());
+        auto data_message = message_for_type<ContainerType, ElementType, ContainerInterface>(data);
+
+        if (!m_outbound_socket.send(id_message, zmq::send_flags::sndmore))
         {
-            static_assert(always_false_v<ContainerType>, "Unsupported type for writing to ZeroMQ");
+            throw std::runtime_error(
+                fmt::format("Error sending a message with id {} with zeromq.", full_path));
+        }
+        if (!m_outbound_socket.send(data_message, zmq::send_flags::none))
+        {
+            throw std::runtime_error(
+                fmt::format("Error sending a data message with id {} with zeromq.", full_path));
         }
     }
 
@@ -118,15 +147,16 @@ class ZeroMQPipe
         }
         auto data_res = m_inbound_socket.recv(data_message, zmq::recv_flags::none);
 
-        auto received_path = id_message.to_string_view();
-        if (received_path != full_path)
+        auto variable_info = ZeroMQVariableInfo::from_string_view(id_message.to_string_view());
+        if (variable_info.name != full_path)
         {
             throw std::runtime_error(
                 fmt::format("Received the id message with wrong id, expected '{}', received '{}", full_path,
-                            received_path));
+                            variable_info.name));
         }
 
-        auto data = data_from_message<ContainerType>(data_message);
+        auto data =
+            data_from_message<ContainerType, ElementType, ContainerInterface>(data_message, variable_info);
         return data;
     }
 
