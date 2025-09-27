@@ -61,4 +61,12 @@ ZeroMQPipe::ZeroMQPipe()
     m_inbound_socket.connect(last_endpoint);
 }
 
+void ZeroMQPipe::validate_name(std::string_view name) const
+{
+    if (name.find(';') != std::string_view::npos)
+    {
+        throw std::runtime_error(fmt::format("ZeroMQPipe: invalid field name, cannot contain ';'"));
+    }
+}
+
 } // namespace ncdlgen

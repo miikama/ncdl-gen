@@ -80,11 +80,8 @@ class ZeroMQPipe
     template <typename ContainerType, typename ElementType, typename ContainerInterface>
     void write(const std::string_view full_path, const ContainerType& data)
     {
+        validate_name(full_path);
 
-        if constexpr (std::is_arithmetic_v<ContainerType>)
-        {
-            auto id_message = zmq::message_t(full_path.data(), full_path.size());
-            auto data_message = message_for_type(data);
 
             if (!m_outbound_socket.send(id_message, zmq::send_flags::sndmore))
             {
@@ -109,6 +106,7 @@ class ZeroMQPipe
     template <typename ContainerType, typename ElementType, typename ContainerInterface>
     ContainerType read(const std::string_view full_path)
     {
+        validate_name(full_path);
 
         zmq::message_t id_message;
         zmq::message_t data_message;
@@ -131,6 +129,8 @@ class ZeroMQPipe
         auto data = data_from_message<ContainerType>(data_message);
         return data;
     }
+
+    void validate_name(std::string_view name) const;
 
   private:
     zmq::context_t m_context;
