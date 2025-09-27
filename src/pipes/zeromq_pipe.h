@@ -9,8 +9,18 @@
 
 namespace ncdlgen
 {
+/**
+ * The metadata that is required to reconstruct ND arrays after receiving them
+ */
+struct ZeroMQVariableInfo
+{
+    std::string name{};
+    std::vector<std::size_t> dimension_sizes{};
 
-template <typename T> zmq::message_t message_for_type(T& data)
+    std::string to_string();
+    static ZeroMQVariableInfo from_string_view(const std::string_view);
+};
+
 {
 
     if constexpr (std::is_fundamental_v<T>)
