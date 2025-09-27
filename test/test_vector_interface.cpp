@@ -114,3 +114,25 @@ TEST(vector_interface, resize_2d)
     EXPECT_ANY_THROW(VectorOperations::resize(a, {}));
     EXPECT_ANY_THROW(VectorOperations::resize(a, {1}));
 }
+
+TEST(vector_interface, dimension_sizes)
+{
+    {
+
+        std::vector<std::vector<int>> data{};
+        auto dimension_sizes =
+            VectorOperations::container_dimension_sizes<int, std::vector<std::vector<int>>>(data);
+        EXPECT_EQ(dimension_sizes.size(), 2);
+        EXPECT_EQ(dimension_sizes[0], 0);
+        EXPECT_EQ(dimension_sizes[1], 0);
+    }
+
+    {
+        std::vector<std::vector<int>> data{{1, 2, 3}, {2, 3, 4}};
+        auto dimension_sizes =
+            VectorOperations::container_dimension_sizes<int, std::vector<std::vector<int>>>(data);
+        EXPECT_EQ(dimension_sizes.size(), 2);
+        EXPECT_EQ(dimension_sizes[0], 2);
+        EXPECT_EQ(dimension_sizes[1], 3);
+    }
+}
