@@ -98,7 +98,7 @@ void Generator::dump_source_read_group(const ncdlgen::Group& group, const std::s
 
     for (auto& serialisation_pipe : options.serialisation_pipes)
     {
-        fmt::print("void {}::read({}& pipe, {}& {}){{\n", name_space_root, serialisation_pipe,
+        fmt::print("void {}::read({}& pipe, {}& {})\n{{\n", name_space_root, serialisation_pipe,
                    fully_qualified_struct_name, group.name());
 
         for (auto& variable : group.variables())
@@ -106,14 +106,14 @@ void Generator::dump_source_read_group(const ncdlgen::Group& group, const std::s
             auto full_path = fmt::format("{}/{}", group_path, variable.name());
             auto container_type_name = options.container_for_dimensions(
                 cpp_name_for_type(variable.basic_type()), variable.dimensions());
-            fmt::print("  {}.{} = pipe.read<{},{},{}>(\"{}\");\n", group.name(), variable.name(),
+            fmt::print("    {}.{} = pipe.read<{}, {}, {}>(\"{}\");\n", group.name(), variable.name(),
                        container_type_name, cpp_name_for_type(variable.basic_type()), options.array_interface,
                        full_path);
         }
 
         for (auto& sub_group : group.groups())
         {
-            fmt::print("  {}::read(pipe, {}.{}_g);\n", name_space_name, group.name(), sub_group.name());
+            fmt::print("    {}::read(pipe, {}.{}_g);\n", name_space_name, group.name(), sub_group.name());
         }
         fmt::print("}}\n\n");
     }
@@ -133,7 +133,7 @@ void Generator::dump_source_write_group(const ncdlgen::Group& group, const std::
 
     for (auto& serialisation_pipe : options.serialisation_pipes)
     {
-        fmt::print("void {}::write({}& pipe, const {}& data){{\n", name_space_root, serialisation_pipe,
+        fmt::print("void {}::write({}& pipe, const {}& data)\n{{\n", name_space_root, serialisation_pipe,
                    fully_qualified_struct_name);
 
         for (auto& variable : group.variables())
@@ -141,14 +141,14 @@ void Generator::dump_source_write_group(const ncdlgen::Group& group, const std::
             auto full_path = fmt::format("{}/{}", group_path, variable.name());
             auto container_type_name = options.container_for_dimensions(
                 cpp_name_for_type(variable.basic_type()), variable.dimensions());
-            fmt::print("  pipe.write<{},{},{}>(\"{}\", data.{});\n", container_type_name,
+            fmt::print("    pipe.write<{}, {}, {}>(\"{}\", data.{});\n", container_type_name,
                        cpp_name_for_type(variable.basic_type()), options.array_interface, full_path,
                        variable.name());
         }
 
         for (auto& sub_group : group.groups())
         {
-            fmt::print("  {}::write(pipe, data.{}_g);\n", name_space_name, sub_group.name());
+            fmt::print("    {}::write(pipe, data.{}_g);\n", name_space_name, sub_group.name());
         }
 
         fmt::print("}}\n\n");
