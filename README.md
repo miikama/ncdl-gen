@@ -311,6 +311,14 @@ Main features for each release
 - Resolve untyped attribute types by finding corresponding variable
 - Make NetCDF and optional dependency
 
+0.3.0
+
+- Rename NetCDFInterface as NetCDFPipe
+- Introduce ZeroMQPipe
+- Add cppzmq/4.10.0 optional dependency
+- Add cli11/2.4.2 dependency
+- Improve code generation configurability
+
 ## Building VSCode extension
 
 Official guides
