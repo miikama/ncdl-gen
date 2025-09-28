@@ -65,6 +65,7 @@ add_library(ncdlgen ${SOURCES})
 
 # Add dependencies to the library
 find_package(fmt REQUIRED)
+find_package(CLI11 REQUIRED)
 
 # during building, headers are in the original directories
 # during installation, all headers are put into a single directory
@@ -83,7 +84,7 @@ target_link_libraries(parser ncdlgen)
 
 # Add generator executable
 add_executable(generator generator/main.cpp)
-target_link_libraries(generator PRIVATE ncdlgen)
+target_link_libraries(generator PRIVATE ncdlgen CLI11::CLI11)
 
 # Add install target for parser and generator
 include(GNUInstallDirs)

@@ -3,6 +3,7 @@
  gtest/1.15.0
  netcdf/4.8.1
  cppzmq/4.10.0
+ cli11/2.4.2
 
 [generators]
  CMakeDeps
