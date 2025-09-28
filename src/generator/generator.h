@@ -29,9 +29,10 @@ class Generator
     {
         GenerateTarget target{GenerateTarget::Header};
         std::string class_name{};
-        std::string serialisation_pipe{"NetCDFPipe"};
+        std::vector<std::string> serialisation_pipes{"NetCDFPipe"};
         std::string array_interface{"VectorInterface"};
-        std::vector<std::string> base_headers{"stdint.h", "pipes/netcdf_pipe.h"};
+        std::vector<std::string> base_headers{"stdint.h"};
+        std::vector<std::string> pipe_headers{"pipes/netcdf_pipe.h"};
         std::vector<std::string> library_headers{"<vector>"};
         std::vector<std::string> interface_headers{"vector_interface.h"};
         std::function<std::string(const std::string_view&, const std::vector<ncdlgen::VariableDimension>&)>

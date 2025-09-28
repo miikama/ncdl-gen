@@ -76,7 +76,7 @@ Group simple
 Take the same example `data/simple.cdl` file but use it as an input for the code-generator:
 
 ```sh
-${installation_directory}/generator data/simple.cdl --header > generated_simple.h
+${installation_directory}/generator data/simple.cdl --header --target_pipes NetCDFPipe
 ```
 
 results in the following generated code
@@ -86,9 +86,10 @@ results in the following generated code
 
 #include "stdint.h"
 
+#include "netcdf_pipe.h"
+
 #include <vector>
 
-#include "netcdf_pipe.h"
 #include "vector_interface.h"
 
 namespace ncdlgen {
@@ -117,7 +118,102 @@ void write(NetCDFPipe& pipe, const simple::foo&);
 };
 ```
 
-Which can be used to read/write the contents of the entire file or its subgroups
+The corresponding source file can be generated with
+
+```sh
+${installation_directory}/generator data/simple.cdl --source --target_pipes NetCDFPipe
+```
+
+### Generation as part of CMake build
+
+This can be integrated as part of a CMake build (as done for the test/CMakelFiles.txt)
+
+```cmake
+# Run generator to create test wrappers
+add_custom_command(
+                   OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.h
+                   OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.cpp
+                   COMMAND generator ${CMAKE_SOURCE_DIR}/data/simple.cdl --header > ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.h
+                   COMMAND generator ${CMAKE_SOURCE_DIR}/data/simple.cdl --source > ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.cpp
+                   DEPENDS generator
+                   DEPENDS ${CMAKE_SOURCE_DIR}/data/simple.cdl
+                   VERBATIM
+                   )
+# Add dependency to generated code
+add_custom_target(generated-test-code
+                  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.h
+                  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.cpp  )
+set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.h
+                            ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.cpp
+                            PROPERTIES GENERATED TRUE)
+set(GENERATED_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.cpp)
+```
+
+### Generator configurability and extra pipes
+
+If you want, the available pipe read/write entries can either be disabled with
+
+```shell
+./generator data/simple.cdl --header --target_pipes  {}
+```
+
+Or you can generate for all the supported pipes
+
+```shell
+./generator data/simple.cdl --header --target_pipes NetCDFPipe ZeroMQPipe
+```
+
+Which generates the following additional interfaces on
+
+```c++
+#pragma once
+
+#include "stdint.h"
+
+#include "pipes/netcdf_pipe.h"
+#include "pipes/zeromq_pipe.h"
+
+#include <vector>
+
+#include "vector_interface.h"
+
+namespace ncdlgen {
+
+struct simple
+{
+  struct foo
+  {
+      int bar;
+      float baz;
+      std::vector<uint16_t> bee;
+      std::vector<std::vector<int>> foobar;
+  };
+
+  foo foo_g{};
+};
+
+void read(NetCDFPipe& pipe, simple&);
+
+void read(ZeroMQPipe& pipe, simple&);
+
+void read(NetCDFPipe& pipe, simple::foo&);
+
+void read(ZeroMQPipe& pipe, simple::foo&);
+
+void write(NetCDFPipe& pipe, const simple&);
+
+void write(ZeroMQPipe& pipe, const simple&);
+
+void write(NetCDFPipe& pipe, const simple::foo&);
+
+void write(ZeroMQPipe& pipe, const simple::foo&);
+
+};
+```
+
+### Using generated code
+
+The generated code for reading and writing to pipes can be used to read/write the contents of the entire file or its subgroups
 
 ```c++
 #include "generated_simple.h"
@@ -131,7 +227,17 @@ ncdlgen::write(pipe, root);
 
 // Read the contents of a netcdf file into 'simple' struct
 read(pipe, root);
+
 pipe.close();
+
+// Configure ZeroMQPipe
+ncdlgen::ZeroMQPipe zeromq_pipe {};
+
+// Push the contents through ZeroMQPipe
+ncdlgen::write(zeromq_pipe, root);
+
+// Read the contents through ZeroMQPipe
+ncdlgen::read(zeromq_pipe, root);
 ```
 
 ## ncdlgen as dependency

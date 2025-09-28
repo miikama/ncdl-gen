@@ -1,7 +1,9 @@
 #pragma once
 
-#include "pipes/netcdf_pipe.h"
 #include "stdint.h"
+
+#include "pipes/netcdf_pipe.h"
+#include "pipes/zeromq_pipe.h"
 
 #include <vector>
 
@@ -25,10 +27,18 @@ struct simple
 
 void read(NetCDFPipe& pipe, simple&);
 
+void read(ZeroMQPipe& pipe, simple&);
+
 void read(NetCDFPipe& pipe, simple::foo&);
+
+void read(ZeroMQPipe& pipe, simple::foo&);
 
 void write(NetCDFPipe& pipe, const simple&);
 
+void write(ZeroMQPipe& pipe, const simple&);
+
 void write(NetCDFPipe& pipe, const simple::foo&);
+
+void write(ZeroMQPipe& pipe, const simple::foo&);
 
 }; // namespace ncdlgen
