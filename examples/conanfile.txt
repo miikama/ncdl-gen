@@ -1,0 +1,9 @@
+[requires]
+ ncdlgen/0.3.0
+
+[generators]
+ CMakeDeps
+ CMakeToolchain
+
+[layout]
+ cmake_layout
