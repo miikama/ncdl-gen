@@ -242,6 +242,43 @@ ncdlgen::read(zeromq_pipe, root);
 
 ## ncdlgen as dependency
 
+See example for downstream usage under the [example](examples) directory.
+
+Clone the `ncdlgen` repository. In repository root, run
+
+```sh
+conan install .
+conan build .
+conan export .
+```
+
+If using conan yourself, you can make a small conanfile with the wanted dependencies
+
+```
+[requires]
+ ncdlgen/0.3.0
+ netcdf/4.8.1
+ cppzmq/4.10.0
+```
+
+And run `conan install . --build=missing`. Which compiles and installs the `ncdlgen` library.
+
+Then, configure your project with `cmake` with
+
+```sh
+cd build
+cmake -DCMAKE_PREFIX_PATH=$(pwd)/Release/generators -DCMAKE_BUILD_TYPE=RELEASE ..
+```
+
+Then compile.
+
+> The example uses the `generator` binary compiled with the ncdlgen build. This has to be in `PATH`
+
+```sh
+export PATH="$PATH:<ncdlgen-install-dir-with-generator-binary>"
+make
+```
+
 After installing ncdlgen you can use the library in your projects `CMakeLists.txt`
 
 ```cmake
@@ -252,23 +289,10 @@ find_package(ncdlgen REQUIRED)
 
 add_executable(custom_parser custom_parser.cpp)
 target_link_libraries(custom_parser PRIVATE ncdlgen::ncdlgen)
+`
 ```
 
-This requires all the `ncdlgen` dependencies to be installed on the system as well.
-
-If you used conan to dowload `ncdlgen` dependencies you can use the same libraries here. Copy the names of the dependencies from the `ncdlgen` repository `conanfile.txt` to a `conanfile.txt` in your project. Use that to set up the build chain
-
-> This is just a hack until `ncdlgen` is available as conan package.
-
-```sh
-cd <your-project-root>
-mkdir build
-cd build
-conan install ..
-cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$(pwd) -DCMAKE_INSTALL_PREFIX=~/ncdlgen -DCMAKE_TOOLCHAIN_PATH=conan_toolchain.cmake ..
-```
-
-If you downloaded depencies manually, you can skip the `conan install`, leave out `-DCMAKE_TOOLCHAIN_PATH=conan_toolchain.cmake` and adding build directory to `CMAKE_PREFIX_PATH` parts.
+The example `CMakeLists.txt` runs the interface generator to build `example_data.h` interface during compilation. This file is included in the example `custom_parser.cpp` file.
 
 ## Build using Docker
 

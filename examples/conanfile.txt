@@ -1,5 +1,7 @@
 [requires]
  ncdlgen/0.3.0
+ netcdf/4.8.1
+ cppzmq/4.10.0
 
 [generators]
  CMakeDeps
