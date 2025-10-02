@@ -8,28 +8,46 @@ In the future ncdlgen could be used as a code generation tool for other structur
 
 ## Installation
 
-Actually building `ncdlgen`
+Clone the repository
 
 ```sh
-mkdir build
-cd build
-conan install --build=missing -of . ..
-cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=~/ncdlgen -DCMAKE_PREFIX_PATH=$(pwd) ..
-make -j6 && make install
+cd ncdl-gen
+git clone git@github.com:miikama/ncdl-gen.git
+```
 
+### Dependencies
 
-# with conan 2.7, it seems that the following is the magic command 
-conan install .  --build=missing
+Get all dependencies with conan. Alternatively, download dependencies and configure `cmake` by hand
+
+```sh
+conan install .
+```
+
+### Install with conan
+
+Install the library for downstream consumers (with conan)
+
+```sh
+conan build .
+conan export .
+```
+
+### Install with cmake
+
+After installing libraries with conan `ncdlgen` can be install with
+
+```sh
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=~/ncdlgen -DCMAKE_PREFIX_PATH=$(pwd)/Release/generators ..
 make -j6 && make install
 ```
 
-Note the usage of conan toolchain file which creates all the required packageConfig.cmake files in the build directory for finding the dependencies. It is also possible to manually download all the primary and transitive dependencies without Conan. Currently primary dependencies are
+After running `conan install .` all the required `packageConfig.cmake` files for `ncdlgen`are now under `build/Release/generators` for finding the dependencies. It is also possible to manually download all the primary and transitive dependencies without Conan. Currently primary dependencies are
 
 - fmt
 - netCDF
 - GTest
+- cppzmq
 
 > NOTE: add permanent setting with `conan profile update settings.compiler.libcxx=libstdc++11 default`
 
@@ -342,6 +360,7 @@ Main features for each release
 - Add cppzmq/4.10.0 optional dependency
 - Add cli11/2.4.2 dependency
 - Improve code generation configurability
+- Make project exportable with conan
 
 ## Building VSCode extension
 
