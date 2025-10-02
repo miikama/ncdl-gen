@@ -15,7 +15,7 @@ set(SOURCES
 # only include public headers here
 set(HEADERS
     equality.h
-    interface.h
+    interfaces/interface.h
     parser.h
     types.h
     logging.h
@@ -35,12 +35,28 @@ if(BUILD_NETCDF)
     set(NETCDF_TARGET "netCDF::netcdf")
 
     set(SOURCES ${SOURCES}
-        netcdf_interface.cpp
+        pipes/netcdf_pipe.cpp
         wrappers/foo_wrapper.cpp
         )
 
     set(HEADERS ${HEADERS}
-        netcdf_interface.h
+        pipes/netcdf_pipe.h
+        )
+endif()
+
+# Build zeromq files optionally (default = ON)
+set(BUILD_ZEROMQ ON CACHE BOOL "Whether to build zeromq dependencies (True) or not (False)")
+set(ZEROMQ_TARGET "")
+if(BUILD_ZEROMQ)
+    find_package(cppzmq REQUIRED)
+    set(ZEROMQ_TARGET "cppzmq")
+
+    set(SOURCES ${SOURCES}
+        pipes/zeromq_pipe.cpp
+        )
+
+    set(HEADERS ${HEADERS}
+        pipes/zeromq_pipe.h
         )
 endif()
 
@@ -49,6 +65,7 @@ add_library(ncdlgen ${SOURCES})
 
 # Add dependencies to the library
 find_package(fmt REQUIRED)
+find_package(CLI11 REQUIRED)
 
 # during building, headers are in the original directories
 # during installation, all headers are put into a single directory
@@ -59,7 +76,7 @@ target_include_directories(ncdlgen PUBLIC
                                         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/generator>
                                         $<INSTALL_INTERFACE:include>)
 target_compile_features(ncdlgen PUBLIC cxx_std_17)
-target_link_libraries(ncdlgen PUBLIC fmt::fmt ${NETCDF_TARGET})
+target_link_libraries(ncdlgen PUBLIC fmt::fmt ${NETCDF_TARGET} ${ZEROMQ_TARGET})
 
 # Add parser executable
 add_executable(parser main.cpp)
@@ -67,7 +84,7 @@ target_link_libraries(parser ncdlgen)
 
 # Add generator executable
 add_executable(generator generator/main.cpp)
-target_link_libraries(generator PRIVATE ncdlgen)
+target_link_libraries(generator PRIVATE ncdlgen CLI11::CLI11)
 
 # Add install target for parser and generator
 include(GNUInstallDirs)

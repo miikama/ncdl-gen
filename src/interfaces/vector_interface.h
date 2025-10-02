@@ -9,6 +9,9 @@
 namespace ncdlgen
 {
 
+// forward declaration
+struct VectorInterface;
+
 namespace VectorOperations
 {
 
@@ -55,6 +58,68 @@ static_assert(dimension_count_v<std::vector<std::vector<int>>> == 2, "2d vector 
  * Helper for total element size as the factor of input dimensions.
  */
 std::size_t number_of_elements(const std::vector<std::size_t>& dimension_sizes);
+
+/**
+ * Get the size of each dimension of a container
+ *
+ * Return 1 for scalar
+ * Return 0 for each empty dimension
+ *
+ * The number of returned entries matches the dimension_count_v<ContainerType>
+ */
+template <typename ElementType, typename ContainerType>
+static std::vector<std::size_t> container_dimension_sizes(const ContainerType& data)
+{
+    if constexpr (std::is_same_v<ElementType, ContainerType>)
+    {
+        return {1};
+    }
+    else if constexpr (std::is_same_v<ElementType, typename ContainerType::value_type>)
+    {
+        return {data.size()};
+    }
+    else
+    {
+        std::vector<std::size_t> dimension_sizes = {data.size()};
+
+        // Stop checking dimension sizes at first empty container
+        // Fill 0 as dimension size for all remaining dimensions
+        if (data.empty())
+        {
+            auto number_of_empty_dimensions =
+                VectorOperations::dimension_count_v<typename ContainerType::value_type>;
+            dimension_sizes.resize(dimension_sizes.size() + number_of_empty_dimensions, 0);
+            return dimension_sizes;
+        }
+
+        // Get the container sizes from the first child
+        auto element_dimension_sizes =
+            container_dimension_sizes<ElementType, typename ContainerType::value_type>(data.front());
+
+        // Double check that the remaining elements are consistently sized
+        for (size_t ielem = 0; ielem < data.size(); ielem++)
+        {
+            auto& element = data[ielem];
+            auto sibling_dimension_sizes =
+                container_dimension_sizes<ElementType, typename ContainerType::value_type>(data.front());
+
+            for (size_t i = 0; i < sibling_dimension_sizes.size(); i++)
+            {
+                if (sibling_dimension_sizes[i] != element_dimension_sizes[i])
+                {
+                    throw std::runtime_error(
+                        fmt::format("VectorInterface: The container dimension sizes are not consistent "
+                                    "between sibling entries, expected size {}, found size {}",
+                                    element_dimension_sizes[i], sibling_dimension_sizes[i]));
+                }
+            }
+        }
+
+        dimension_sizes.insert(dimension_sizes.end(), element_dimension_sizes.begin(),
+                               element_dimension_sizes.end());
+        return dimension_sizes;
+    }
+}
 
 /**
  * Resize the input Container (vector of vectors) based on input dimension sizes
@@ -127,6 +192,48 @@ void assign(ContainerType& container, const std::vector<ElementType>& data)
     assign(container, data, flat_index);
 };
 
+/**
+ * Assign elements from input Container (vector of vectors) to flat vector
+ */
+template <typename ElementType, typename ContainerType>
+void flatten_data(const ContainerType& data, std::vector<ElementType>& flat_data, std::size_t& flat_index)
+{
+    if constexpr (std::is_same_v<ElementType, ContainerType>)
+    {
+        if (flat_index >= flat_data.size())
+        {
+            throw std::runtime_error(
+                fmt::format("Trying to assign to flat_data at index {}, when space available for {} entries.",
+                            flat_index, flat_data.size()));
+        }
+
+        flat_data[flat_index++] = data;
+    }
+    else
+    {
+        for (auto& element : data)
+        {
+            flatten_data<ElementType, typename ContainerType::value_type>(element, flat_data, flat_index);
+        }
+    }
+}
+
+/**
+ * Assign elements from input Container (vector of vectors) to flat vector
+ *
+ * Main interface for users, set up the flat index counter
+ */
+template <typename ElementType, typename ContainerType>
+Data<ElementType> flatten_data(const ContainerType& data)
+{
+    Data<ElementType> flat_data = {};
+    std::size_t flat_index{};
+    flat_data.dimension_sizes = container_dimension_sizes<ElementType, ContainerType>(data);
+    flat_data.data.resize(VectorOperations::number_of_elements(flat_data.dimension_sizes));
+    flatten_data<ElementType, ContainerType>(data, flat_data.data, flat_index);
+    return flat_data;
+}
+
 }; // namespace VectorOperations
 
 struct VectorInterface
@@ -139,6 +246,18 @@ struct VectorInterface
         return true;
     };
 
+    /**
+     * Prepare container contents for writing in a flat buffer
+     */
+    template <typename ElementType, typename ContainerType>
+    static Data<ElementType> prepare(const ContainerType& data)
+    {
+        return VectorOperations::flatten_data<ElementType, ContainerType>(data);
+    }
+
+    /**
+     * Prepare container for reading into, with known dimension sizes of the input
+     */
     template <typename ElementType, typename ContainerType>
     static Data<ElementType> prepare(const std::vector<std::size_t>& dimension_sizes)
     {
@@ -148,6 +267,9 @@ struct VectorInterface
         return data;
     }
 
+    /**
+     * Return the intermediate buffer transformed in the shape of the final container
+     */
     template <typename ElementType, typename ContainerType>
     static void finalise(ContainerType& output, const Data<ElementType>& data)
     {

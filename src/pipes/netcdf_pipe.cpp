@@ -5,19 +5,19 @@
 
 #include "netcdf.h"
 
-#include "netcdf_interface.h"
+#include "netcdf_pipe.h"
 #include "utils.h"
 
 namespace ncdlgen
 {
 
-void NetCDFInterface::throw_error(std::string_view message, int error_code)
+void NetCDFPipe::throw_error(std::string_view message, int error_code)
 {
     throw std::runtime_error(
         fmt::format("Error with NetCDF function {}: '{}'.", message, nc_strerror(error_code)));
 }
 
-void NetCDFInterface::assert_open()
+void NetCDFPipe::assert_open()
 {
     if (root_id < 0)
     {
@@ -25,7 +25,7 @@ void NetCDFInterface::assert_open()
     }
 }
 
-void NetCDFInterface::open()
+void NetCDFPipe::open()
 {
     if (auto res = nc_open(path.c_str(), NC_WRITE, &root_id))
     {
@@ -33,7 +33,7 @@ void NetCDFInterface::open()
     }
 }
 
-void NetCDFInterface::close()
+void NetCDFPipe::close()
 {
     if (root_id < 0)
     {
@@ -46,7 +46,7 @@ void NetCDFInterface::close()
     }
 }
 
-NetCDFInterface::Path NetCDFInterface::resolve_path(const std::string_view path)
+NetCDFPipe::Path NetCDFPipe::resolve_path(const std::string_view path)
 {
     assert_open();
 
@@ -67,7 +67,7 @@ NetCDFInterface::Path NetCDFInterface::resolve_path(const std::string_view path)
     return Path{.group_id = parent_group_id, .variable_id = variable_id};
 }
 
-NetCDFInterface::VariableInfo NetCDFInterface::get_variable_info(const Path& path)
+NetCDFPipe::VariableInfo NetCDFPipe::get_variable_info(const Path& path)
 {
     assert_open();
 
@@ -109,7 +109,7 @@ NetCDFInterface::VariableInfo NetCDFInterface::get_variable_info(const Path& pat
                         .nc_type = variable_type};
 }
 
-int NetCDFInterface::get_group_id(const int parent_group_id, const std::string_view group_name)
+int NetCDFPipe::get_group_id(const int parent_group_id, const std::string_view group_name)
 {
     assert_open();
     int group_id{-1};
@@ -122,7 +122,7 @@ int NetCDFInterface::get_group_id(const int parent_group_id, const std::string_v
     return group_id;
 }
 
-int NetCDFInterface::get_variable_id(const int group_id, std::string_view path)
+int NetCDFPipe::get_variable_id(const int group_id, std::string_view path)
 {
     assert_open();
     std::string variable_name{path};
@@ -134,7 +134,7 @@ int NetCDFInterface::get_variable_id(const int group_id, std::string_view path)
     return variable_id;
 }
 
-std::size_t NetCDFInterface::get_dimension_size(const Path& path)
+std::size_t NetCDFPipe::get_dimension_size(const Path& path)
 {
     assert_open();
     std::size_t dimension_length{};

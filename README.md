@@ -16,6 +16,13 @@ cd build
 conan install --build=missing -of . ..
 cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=~/ncdlgen -DCMAKE_PREFIX_PATH=$(pwd) ..
 make -j6 && make install
+
+
+# with conan 2.7, it seems that the following is the magic command 
+conan install .  --build=missing
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=~/ncdlgen -DCMAKE_PREFIX_PATH=$(pwd)/Release/generators ..
+make -j6 && make install
 ```
 
 Note the usage of conan toolchain file which creates all the required packageConfig.cmake files in the build directory for finding the dependencies. It is also possible to manually download all the primary and transitive dependencies without Conan. Currently primary dependencies are
@@ -69,7 +76,7 @@ Group simple
 Take the same example `data/simple.cdl` file but use it as an input for the code-generator:
 
 ```sh
-${installation_directory}/generator data/simple.cdl --header > generated_simple.h
+${installation_directory}/generator data/simple.cdl --header --target_pipes NetCDFPipe --interface_class_name generated_simple
 ```
 
 results in the following generated code
@@ -79,9 +86,10 @@ results in the following generated code
 
 #include "stdint.h"
 
+#include "netcdf_pipe.h"
+
 #include <vector>
 
-#include "netcdf_interface.h"
 #include "vector_interface.h"
 
 namespace ncdlgen {
@@ -99,35 +107,177 @@ struct simple
   foo foo_g{};
 };
 
-void read(NetCDFInterface& interface, simple&);
+void read(NetCDFPipe& pipe, simple&);
 
-void read(NetCDFInterface& interface, simple::foo&);
+void read(NetCDFPipe& pipe, simple::foo&);
 
-void write(NetCDFInterface& interface, const simple&);
+void write(NetCDFPipe& pipe, const simple&);
 
-void write(NetCDFInterface& interface, const simple::foo&);
+void write(NetCDFPipe& pipe, const simple::foo&);
 
 };
 ```
 
-Which can be used to read/write the contents of the entire file or its subgroups
+The corresponding source file can be generated with
+
+```sh
+${installation_directory}/generator data/simple.cdl --source --target_pipes NetCDFPipe --interface_class_name generated_simple
+```
+
+### Generation as part of CMake build
+
+This can be integrated as part of a CMake build (as done for the test/CMakelFiles.txt)
+
+```cmake
+# Run generator to create test wrappers
+add_custom_command(
+                   OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.h
+                   OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.cpp
+                   COMMAND generator ${CMAKE_SOURCE_DIR}/data/simple.cdl --header > ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.h
+                   COMMAND generator ${CMAKE_SOURCE_DIR}/data/simple.cdl --source > ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.cpp
+                   DEPENDS generator
+                   DEPENDS ${CMAKE_SOURCE_DIR}/data/simple.cdl
+                   VERBATIM
+                   )
+# Add dependency to generated code
+add_custom_target(generated-test-code
+                  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.h
+                  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.cpp  )
+set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.h
+                            ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.cpp
+                            PROPERTIES GENERATED TRUE)
+set(GENERATED_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.cpp)
+```
+
+### Generator configurability and extra pipes
+
+If you want, the available pipe read/write entries can either be disabled with
+
+```shell
+./generator data/simple.cdl --header --target_pipes  {} --interface_class_name generated_simple
+```
+
+Or you can generate for all the supported pipes
+
+```shell
+./generator data/simple.cdl --header --target_pipes NetCDFPipe ZeroMQPipe --interface_class_name generated_simple
+```
+
+Which generates the following additional interfaces on
+
+```c++
+#pragma once
+
+#include "stdint.h"
+
+#include "pipes/netcdf_pipe.h"
+#include "pipes/zeromq_pipe.h"
+
+#include <vector>
+
+#include "vector_interface.h"
+
+namespace ncdlgen {
+
+struct simple
+{
+  struct foo
+  {
+      int bar;
+      float baz;
+      std::vector<uint16_t> bee;
+      std::vector<std::vector<int>> foobar;
+  };
+
+  foo foo_g{};
+};
+
+void read(NetCDFPipe& pipe, simple&);
+
+void read(ZeroMQPipe& pipe, simple&);
+
+void read(NetCDFPipe& pipe, simple::foo&);
+
+void read(ZeroMQPipe& pipe, simple::foo&);
+
+void write(NetCDFPipe& pipe, const simple&);
+
+void write(ZeroMQPipe& pipe, const simple&);
+
+void write(NetCDFPipe& pipe, const simple::foo&);
+
+void write(ZeroMQPipe& pipe, const simple::foo&);
+
+};
+```
+
+### Using generated code
+
+The generated code for reading and writing to pipes can be used to read/write the contents of the entire file or its subgroups
 
 ```c++
 #include "generated_simple.h"
 
 ncdlgen::simple root;
-ncdlgen::NetCDFInterface interface{"generated.nc"};
-interface.open();
+ncdlgen::NetCDFPipe pipe{"generated.nc"};
+pipe.open();
 
 // Write contents of 'simple' struct to a netcdf file
-ncdlgen::write(interface, root);
+ncdlgen::write(pipe, root);
 
 // Read the contents of a netcdf file into 'simple' struct
-read(interface, root);
-interface.close();
+read(pipe, root);
+
+pipe.close();
+
+// Configure ZeroMQPipe
+ncdlgen::ZeroMQPipe zeromq_pipe {};
+
+// Push the contents through ZeroMQPipe
+ncdlgen::write(zeromq_pipe, root);
+
+// Read the contents through ZeroMQPipe
+ncdlgen::read(zeromq_pipe, root);
 ```
 
 ## ncdlgen as dependency
+
+See example for downstream usage under the [example](examples) directory.
+
+Clone the `ncdlgen` repository. In repository root, run
+
+```sh
+conan install .
+conan build .
+conan export .
+```
+
+If using conan yourself, you can make a small conanfile with the wanted dependencies
+
+```
+[requires]
+ ncdlgen/0.3.0
+ netcdf/4.8.1
+ cppzmq/4.10.0
+```
+
+And run `conan install . --build=missing`. Which compiles and installs the `ncdlgen` library.
+
+Then, configure your project with `cmake` with
+
+```sh
+cd build
+cmake -DCMAKE_PREFIX_PATH=$(pwd)/Release/generators -DCMAKE_BUILD_TYPE=RELEASE ..
+```
+
+Then compile.
+
+> The example uses the `generator` binary compiled with the ncdlgen build. This has to be in `PATH`
+
+```sh
+export PATH="$PATH:<ncdlgen-install-dir-with-generator-binary>"
+make
+```
 
 After installing ncdlgen you can use the library in your projects `CMakeLists.txt`
 
@@ -139,23 +289,10 @@ find_package(ncdlgen REQUIRED)
 
 add_executable(custom_parser custom_parser.cpp)
 target_link_libraries(custom_parser PRIVATE ncdlgen::ncdlgen)
+`
 ```
 
-This requires all the `ncdlgen` dependencies to be installed on the system as well.
-
-If you used conan to dowload `ncdlgen` dependencies you can use the same libraries here. Copy the names of the dependencies from the `ncdlgen` repository `conanfile.txt` to a `conanfile.txt` in your project. Use that to set up the build chain
-
-> This is just a hack until `ncdlgen` is available as conan package.
-
-```sh
-cd <your-project-root>
-mkdir build
-cd build
-conan install ..
-cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$(pwd) -DCMAKE_INSTALL_PREFIX=~/ncdlgen -DCMAKE_TOOLCHAIN_PATH=conan_toolchain.cmake ..
-```
-
-If you downloaded depencies manually, you can skip the `conan install`, leave out `-DCMAKE_TOOLCHAIN_PATH=conan_toolchain.cmake` and adding build directory to `CMAKE_PREFIX_PATH` parts.
+The example `CMakeLists.txt` runs the interface generator to build `example_data.h` interface during compilation. This file is included in the example `custom_parser.cpp` file.
 
 ## Build using Docker
 
@@ -197,6 +334,14 @@ Main features for each release
 - Support global attributes outside of variables: section
 - Resolve untyped attribute types by finding corresponding variable
 - Make NetCDF and optional dependency
+
+0.3.0
+
+- Rename NetCDFInterface as NetCDFPipe
+- Introduce ZeroMQPipe
+- Add cppzmq/4.10.0 optional dependency
+- Add cli11/2.4.2 dependency
+- Improve code generation configurability
 
 ## Building VSCode extension
 

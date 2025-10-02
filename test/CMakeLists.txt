@@ -4,8 +4,8 @@
 add_custom_command(
                    OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.h
                    OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.cpp
-                   COMMAND generator ${CMAKE_SOURCE_DIR}/data/simple.cdl --header > ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.h
-                   COMMAND generator ${CMAKE_SOURCE_DIR}/data/simple.cdl --source > ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.cpp
+                   COMMAND generator ${CMAKE_SOURCE_DIR}/data/simple.cdl --header --interface_class_name generated_simple > ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.h
+                   COMMAND generator ${CMAKE_SOURCE_DIR}/data/simple.cdl --source --interface_class_name generated_simple > ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.cpp
                    DEPENDS generator
                    DEPENDS ${CMAKE_SOURCE_DIR}/data/simple.cdl
                    VERBATIM
@@ -23,8 +23,17 @@ set(GENERATED_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.cpp)
 if(BUILD_NETCDF)
 
     set(NETCDF_TESTS
-        test_netcdf_interface.cpp
+        test_netcdf_pipe.cpp
         test_generator.cpp
+        ${GENERATED_SOURCES}
+        )
+endif()
+
+# Make zeromq dependent test cases optional
+if(BUILD_ZEROMQ)
+
+    set(ZEROMQ_TESTS
+        test_zeromq_pipe.cpp
         ${GENERATED_SOURCES}
         )
 endif()
@@ -45,6 +54,7 @@ add_executable(test_cases test_main.cpp
                test_types.cpp
                test_vector_interface.cpp
                ${NETCDF_TESTS}
+               ${ZEROMQ_TESTS}
                )
 target_include_directories(test_cases PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 

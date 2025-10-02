@@ -1,6 +1,6 @@
 
 cmake_minimum_required(VERSION 3.10)
-project("ncdl-gen" VERSION 0.2.0)
+project("ncdlgen" VERSION 0.3.0)
 
 enable_language(CXX)
 

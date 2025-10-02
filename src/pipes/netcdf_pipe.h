@@ -22,12 +22,12 @@ namespace ncdlgen
  *
  * Now we do not have to define all the dimensions for the variables
  */
-class NetCDFInterface
+class NetCDFPipe
 {
   public:
-    NetCDFInterface(std::string_view file_path) : path(file_path) {}
+    NetCDFPipe(std::string_view file_path) : path(file_path) {}
 
-    virtual ~NetCDFInterface() = default;
+    virtual ~NetCDFPipe() = default;
 
     void open();
     void close();

@@ -1,0 +1,11 @@
+netcdf data {
+
+    dimensions:
+        dim1 = 1 ;
+
+    variables:
+        float time(dim1) ;
+        float latitude(dim1) ;
+        float longitude(dim1) ;
+        float value(dim1) ;
+}
