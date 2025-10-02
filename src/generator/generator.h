@@ -28,7 +28,7 @@ class Generator
     struct Options
     {
         GenerateTarget target{GenerateTarget::Header};
-        std::string class_name{};
+        std::string header_name{"generated_simple"};
         std::vector<std::string> serialisation_pipes{"NetCDFPipe"};
         std::string array_interface{"VectorInterface"};
         std::vector<std::string> base_headers{"stdint.h"};

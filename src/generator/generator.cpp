@@ -163,7 +163,7 @@ void Generator::dump_source_write_group(const ncdlgen::Group& group, const std::
 
 void Generator::dump_source(const ncdlgen::Group& group, const std::string_view group_path)
 {
-    fmt::print("#include \"{}.h\"\n\n", "generated_simple");
+    fmt::print("#include \"{}.h\"\n\n", options.header_name);
 
     // writing
     dump_source_write_group(group, group_path, "ncdlgen");
@@ -182,7 +182,7 @@ void Generator::dump_source_headers(const ncdlgen::Group& group)
     fmt::print("\n");
     for (auto& header : options.pipe_headers)
     {
-        fmt::print("#include \"{}\"\n", header);
+        fmt::print("#include {}\n", header);
     }
     fmt::print("\n");
     for (auto& header : options.library_headers)
@@ -192,7 +192,7 @@ void Generator::dump_source_headers(const ncdlgen::Group& group)
     fmt::print("\n");
     for (auto& header : options.interface_headers)
     {
-        fmt::print("#include \"{}\"\n", header);
+        fmt::print("#include {}\n", header);
     }
     fmt::print("\n");
 }

@@ -4,8 +4,8 @@
 add_custom_command(
                    OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.h
                    OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.cpp
-                   COMMAND generator ${CMAKE_SOURCE_DIR}/data/simple.cdl --header > ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.h
-                   COMMAND generator ${CMAKE_SOURCE_DIR}/data/simple.cdl --source > ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.cpp
+                   COMMAND generator ${CMAKE_SOURCE_DIR}/data/simple.cdl --header --interface_class_name generated_simple > ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.h
+                   COMMAND generator ${CMAKE_SOURCE_DIR}/data/simple.cdl --source --interface_class_name generated_simple > ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.cpp
                    DEPENDS generator
                    DEPENDS ${CMAKE_SOURCE_DIR}/data/simple.cdl
                    VERBATIM

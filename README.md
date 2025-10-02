@@ -76,7 +76,7 @@ Group simple
 Take the same example `data/simple.cdl` file but use it as an input for the code-generator:
 
 ```sh
-${installation_directory}/generator data/simple.cdl --header --target_pipes NetCDFPipe
+${installation_directory}/generator data/simple.cdl --header --target_pipes NetCDFPipe --interface_class_name generated_simple
 ```
 
 results in the following generated code
@@ -121,7 +121,7 @@ void write(NetCDFPipe& pipe, const simple::foo&);
 The corresponding source file can be generated with
 
 ```sh
-${installation_directory}/generator data/simple.cdl --source --target_pipes NetCDFPipe
+${installation_directory}/generator data/simple.cdl --source --target_pipes NetCDFPipe --interface_class_name generated_simple
 ```
 
 ### Generation as part of CMake build
@@ -154,13 +154,13 @@ set(GENERATED_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.cpp)
 If you want, the available pipe read/write entries can either be disabled with
 
 ```shell
-./generator data/simple.cdl --header --target_pipes  {}
+./generator data/simple.cdl --header --target_pipes  {} --interface_class_name generated_simple
 ```
 
 Or you can generate for all the supported pipes
 
 ```shell
-./generator data/simple.cdl --header --target_pipes NetCDFPipe ZeroMQPipe
+./generator data/simple.cdl --header --target_pipes NetCDFPipe ZeroMQPipe --interface_class_name generated_simple
 ```
 
 Which generates the following additional interfaces on

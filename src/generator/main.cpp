@@ -9,23 +9,36 @@
 using namespace ncdlgen;
 
 void generate(const std::string& input_cdl, Generator::GenerateTarget target,
-              const std::vector<std::string>& target_pipes)
+              const std::vector<std::string>& target_pipes, const std::string& interface_name,
+              bool use_library_include)
 {
     std::unordered_map<std::string, std::string> supported_pipes = {
-        {"NetCDFPipe", "pipes/netcdf_pipe.h"},
-        {"ZeroMQPipe", "pipes/zeromq_pipe.h"},
+        {"NetCDFPipe", "\"pipes/netcdf_pipe.h\""},
+        {"ZeroMQPipe", "\"pipes/zeromq_pipe.h\""},
     };
-    Generator::Options options{.target = target};
 
+    std::unordered_map<std::string, std::string> supported_library_pipes = {
+        {"NetCDFPipe", "<ncdlgen/netcdf_pipe.h>"},
+        {"ZeroMQPipe", "<ncdlgen/zeromq_pipe.h>"},
+    };
+    auto& pipes = use_library_include ? supported_library_pipes : supported_pipes;
+
+    std::vector<std::string> supported_interfaces = {"\"vector_interface.h\""};
+    std::vector<std::string> supported_library_interfaces = {"<ncdlgen/vector_interface.h>"};
+    auto interfaces = use_library_include ? supported_library_interfaces : supported_interfaces;
+
+    Generator::Options options{.target = target, .header_name = interface_name};
+
+    options.interface_headers = interfaces;
     options.serialisation_pipes = target_pipes;
     options.pipe_headers = {};
     for (auto& pipe : target_pipes)
     {
-        if (supported_pipes.find(pipe) == supported_pipes.end())
+        if (pipes.find(pipe) == pipes.end())
         {
             throw std::runtime_error(fmt::format("Interface Generator: Unsupported pipe {}.", pipe));
         }
-        options.pipe_headers.push_back(supported_pipes.at(pipe));
+        options.pipe_headers.push_back(pipes.at(pipe));
     }
 
     Generator generator{options};
@@ -44,6 +57,8 @@ int main(int argc, char** argv)
     bool create_source{false};
     // Create the code for writing to these pipes
     std::vector<std::string> target_pipes = {"NetCDFPipe", "ZeroMQPipe"};
+    std::string interface_name{};
+    bool use_library_include{};
 
     app.add_option("interface_cdl", interface_cdl, "The input .cdl file path")->required();
     app.add_flag("--header", create_header, "Create the interface header");
@@ -51,6 +66,9 @@ int main(int argc, char** argv)
     app.add_option("--target_pipes", target_pipes,
                    "Create interfaces for specific pipes (NetCDFPipe, ZeroMQPipe).")
         ->expected(0, -1);
+    app.add_option("--interface_class_name", interface_name, "The name of the generated interface class");
+    app.add_flag("--use_library_include", use_library_include,
+                 "Include files as '<ncdlgen/interface.h> (true) or 'interface.h' (false)");
 
     CLI11_PARSE(app, argc, argv);
 
@@ -62,11 +80,13 @@ int main(int argc, char** argv)
 
     if (create_header)
     {
-        generate(interface_cdl, Generator::GenerateTarget::Header, target_pipes);
+        generate(interface_cdl, Generator::GenerateTarget::Header, target_pipes, interface_name,
+                 use_library_include);
     }
     if (create_source)
     {
-        generate(interface_cdl, Generator::GenerateTarget::Source, target_pipes);
+        generate(interface_cdl, Generator::GenerateTarget::Source, target_pipes, interface_name,
+                 use_library_include);
     }
 
     return 0;
