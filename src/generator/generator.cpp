@@ -79,7 +79,7 @@ void Generator::dump_header_writing(const ncdlgen::Group& group,
 
 void Generator::dump_header_namespace(const ncdlgen::Group& group)
 {
-    fmt::print("namespace ncdlgen {{\n\n");
+    fmt::print("namespace {} {{\n\n", options.generated_namespace);
 
     dump_header(group, 0);
 
@@ -166,10 +166,10 @@ void Generator::dump_source(const ncdlgen::Group& group, const std::string_view 
     fmt::print("#include \"{}.h\"\n\n", options.header_name);
 
     // writing
-    dump_source_write_group(group, group_path, "ncdlgen");
+    dump_source_write_group(group, group_path, options.generated_namespace);
 
     // reading
-    dump_source_read_group(group, group_path, "ncdlgen");
+    dump_source_read_group(group, group_path, options.generated_namespace);
 }
 
 void Generator::dump_source_headers(const ncdlgen::Group& group)

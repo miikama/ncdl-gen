@@ -29,6 +29,7 @@ class Generator
     {
         GenerateTarget target{GenerateTarget::Header};
         std::string header_name{"generated_simple"};
+        std::string generated_namespace{"generated"};
         std::vector<std::string> serialisation_pipes{"NetCDFPipe"};
         std::string array_interface{"VectorInterface"};
         std::vector<std::string> base_headers{"stdint.h"};

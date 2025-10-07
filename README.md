@@ -172,13 +172,13 @@ set(GENERATED_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/generated_simple.cpp)
 If you want, the available pipe read/write entries can either be disabled with
 
 ```shell
-./generator data/simple.cdl --header --target_pipes  {} --interface_class_name generated_simple
+./generator data/simple.cdl --header --target_pipes  {} --interface_class_name generated_simple --interface_namespace_name generated
 ```
 
 Or you can generate for all the supported pipes
 
 ```shell
-./generator data/simple.cdl --header --target_pipes NetCDFPipe ZeroMQPipe --interface_class_name generated_simple
+./generator data/simple.cdl --header --target_pipes NetCDFPipe ZeroMQPipe --interface_class_name generated_simple --interface_namespace_name generated
 ```
 
 Which generates the following additional interfaces on
@@ -195,7 +195,7 @@ Which generates the following additional interfaces on
 
 #include "vector_interface.h"
 
-namespace ncdlgen {
+namespace generated {
 
 struct simple
 {
