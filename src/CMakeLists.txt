@@ -57,6 +57,7 @@ if(BUILD_ZEROMQ)
 
     set(HEADERS ${HEADERS}
         pipes/zeromq_pipe.h
+        pipes/zeromq_configuration.h
         )
 endif()
 

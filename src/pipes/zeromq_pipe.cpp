@@ -50,15 +50,60 @@ ZeroMQVariableInfo ZeroMQVariableInfo::from_string_view(const std::string_view f
 
 ZeroMQPipe::ZeroMQPipe()
 {
-    m_context = zmq::context_t();
-    m_outbound_socket = zmq::socket_t(m_context, zmq::socket_type::push);
-    m_inbound_socket = zmq::socket_t(m_context, zmq::socket_type::pull);
+    // If the incoming socket is not yet created at the time
+    // of sending the data through output, data is not received
+    //
+    // Create the context and sockets at object creation
+    // to enable seamless usage.
+    //
+    // This behaviour should likely be revisited
+    get_outbound_socket();
+    get_incoming_socket();
+}
 
-    // TODO: both the inbound and outbound sockets need to be arguments
-    // This is enough to test the data serialisation, but not more.
-    m_outbound_socket.bind("tcp://127.0.0.1:*");
-    const std::string last_endpoint = m_outbound_socket.get(zmq::sockopt::last_endpoint);
-    m_inbound_socket.connect(last_endpoint);
+ZeroMQPipe::ZeroMQPipe(const ZeroMQConfiguration& config) : m_config(config)
+{
+    // If the incoming socket is not yet created at the time
+    // of sending the data through output, data is not received
+    //
+    // Create the context and sockets at object creation
+    // to enable seamless usage.
+    //
+    // This behaviour should likely be revisited
+    get_outbound_socket();
+    get_incoming_socket();
+}
+
+zmq::context_t& ZeroMQPipe::get_context()
+{
+    if (!m_context)
+    {
+        m_context = std::make_unique<zmq::context_t>();
+    }
+    return *m_context;
+}
+zmq::socket_t& ZeroMQPipe::get_outbound_socket()
+{
+    auto& context = get_context();
+
+    if (!m_outbound_socket)
+    {
+        m_outbound_socket = std::make_unique<zmq::socket_t>(context, zmq::socket_type::push);
+        m_outbound_socket->bind(m_config.outbound_socket);
+    }
+    return *m_outbound_socket;
+}
+
+zmq::socket_t& ZeroMQPipe::get_incoming_socket()
+{
+    auto& context = get_context();
+
+    if (!m_incoming_socket)
+    {
+        m_incoming_socket = std::make_unique<zmq::socket_t>(context, zmq::socket_type::pull);
+        m_incoming_socket->connect(m_config.incoming_socket);
+    }
+    return *m_incoming_socket;
 }
 
 void ZeroMQPipe::validate_name(std::string_view name) const
