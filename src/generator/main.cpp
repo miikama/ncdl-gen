@@ -12,19 +12,28 @@ void generate(const std::string& input_cdl, Generator::GenerateTarget target,
               const std::vector<std::string>& target_pipes, const std::string& interface_name,
               const std::string& namespace_name, bool use_library_include)
 {
+    // The pipe includes for internal use in ncdlgen
     std::unordered_map<std::string, std::string> supported_pipes = {
         {"NetCDFPipe", "\"pipes/netcdf_pipe.h\""},
         {"ZeroMQPipe", "\"pipes/zeromq_pipe.h\""},
     };
 
+    // The pipe includes when using ncdlgen as library
     std::unordered_map<std::string, std::string> supported_library_pipes = {
         {"NetCDFPipe", "<ncdlgen/netcdf_pipe.h>"},
         {"ZeroMQPipe", "<ncdlgen/zeromq_pipe.h>"},
     };
+
+    // Support internal and external use
     auto& pipes = use_library_include ? supported_library_pipes : supported_pipes;
 
+    // The interface includes for internal use in ncdlgen
     std::vector<std::string> supported_interfaces = {"\"vector_interface.h\""};
+
+    // The interface includes when using ncdlgen as library
     std::vector<std::string> supported_library_interfaces = {"<ncdlgen/vector_interface.h>"};
+
+    // Support internal and external use
     auto interfaces = use_library_include ? supported_library_interfaces : supported_interfaces;
 
     Generator::Options options{
