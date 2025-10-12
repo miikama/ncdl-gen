@@ -1,10 +1,46 @@
 # ncdlgen
 
-ncdlgen is a C++ library that provides a [NetCDF](https://github.com/Unidata/netcdf-c) cdl-_parser_ and a _code generator_ for C++ code that reads/writes NetCDF files.
+`ncdlgen` in a nutshell: A library that enables creating interfaces for reading and writing structured typed data in multiple formats.
+
+ncdlgen is a C++ library that provides a [NetCDF](https://github.com/Unidata/netcdf-c) cdl-_parser_ and a _code generator_ for C++ code that reads/writes NetCDF files to reads/writes data with [ZeroMQ](https://zeromq.org/).
 
 NetCDF is a platform independent data file format for structured data. It is commonly used in Earth observation missions as data storage format. NetCDF cdl-files describe structured data and are used together with the NetCDF library tools. The Netcdf CDL grammar is available [here](https://manpages.ubuntu.com/manpages/focal/man1/ncgen.1.html).
 
-In the future ncdlgen could be used as a code generation tool for other structured data formats as well.
+ZeroMQ provides sockets that carry atomic messages across various transports like in-process, inter-process, TCP, and multicast.
+
+In the future `ncdlgen` could be used as a code generation tool for other structured data formats as well.
+
+## Example
+
+See concrete example for using `ncdlgen` as a library to enable code generation and writing to different pipes under `examples/`. Main current features include generating interface code based on `.cdl` file and reading the same data in multiple formats.
+
+Interface is described via .cdl file:
+
+```
+netcdf Data {
+  variables:
+    int foo ;
+    float bar ;
+}
+```
+
+And passing this data
+
+```c++
+// Data in generated during compilation with the interface code generator
+generated::Data data{{1}, {2.0}};
+
+// Create ZeroMQPipe at local socket and send data
+ncdlgen::ZeroMQPipe pipe();
+generated::write(pipe, data);
+
+// Receive the data (other process, node etc.)
+generated::read(pipe, data);
+
+// Write received data to file
+ncdlgen::NetCDFPipe ncpipe("data.nc");
+generated::read(ncpipe, data);
+```
 
 ## Installation
 

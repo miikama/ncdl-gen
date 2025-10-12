@@ -1,4 +1,4 @@
-netcdf data {
+netcdf Data {
 
     dimensions:
         dim1 = 1 ;
