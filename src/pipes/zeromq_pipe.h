@@ -1,14 +1,19 @@
 
 #pragma once
 
+#include <memory>
+
 #include <fmt/core.h>
 #include <zmq.hpp>
 
 #include "utils.h"
 #include "vector_interface.h"
 
+#include "zeromq_configuration.h"
+
 namespace ncdlgen
 {
+
 /**
  * The metadata that is required to reconstruct ND arrays after receiving them
  */
@@ -90,6 +95,7 @@ class ZeroMQPipe
 {
   public:
     ZeroMQPipe();
+    ZeroMQPipe(const ZeroMQConfiguration& config);
 
     virtual ~ZeroMQPipe() = default;
 
@@ -109,6 +115,9 @@ class ZeroMQPipe
     {
         validate_name(full_path);
 
+        // Get a socket for writing
+        auto& socket = get_outbound_socket();
+
         auto data_size =
             VectorOperations::template container_dimension_sizes<ElementType, ContainerType>(data);
         ZeroMQVariableInfo variable_info{std::string(full_path), data_size};
@@ -117,12 +126,12 @@ class ZeroMQPipe
         auto id_message = zmq::message_t(info_string.data(), info_string.size());
         auto data_message = message_for_type<ContainerType, ElementType, ContainerInterface>(data);
 
-        if (!m_outbound_socket.send(id_message, zmq::send_flags::sndmore))
+        if (!socket.send(id_message, zmq::send_flags::sndmore))
         {
             throw std::runtime_error(
                 fmt::format("Error sending a message with id {} with zeromq.", full_path));
         }
-        if (!m_outbound_socket.send(data_message, zmq::send_flags::none))
+        if (!socket.send(data_message, zmq::send_flags::none))
         {
             throw std::runtime_error(
                 fmt::format("Error sending a data message with id {} with zeromq.", full_path));
@@ -137,15 +146,18 @@ class ZeroMQPipe
     {
         validate_name(full_path);
 
+        // get socket for reading
+        auto& socket = get_incoming_socket();
+
         zmq::message_t id_message;
         zmq::message_t data_message;
-        auto res = m_inbound_socket.recv(id_message, zmq::recv_flags::none);
+        auto res = socket.recv(id_message, zmq::recv_flags::none);
         if (!id_message.more())
         {
             throw std::runtime_error(
                 fmt::format("Error receiving a message with id {} with zeromq.", full_path));
         }
-        auto data_res = m_inbound_socket.recv(data_message, zmq::recv_flags::none);
+        auto data_res = socket.recv(data_message, zmq::recv_flags::none);
 
         auto variable_info = ZeroMQVariableInfo::from_string_view(id_message.to_string_view());
         if (variable_info.name != full_path)
@@ -162,10 +174,19 @@ class ZeroMQPipe
 
     void validate_name(std::string_view name) const;
 
+    /**
+     * Create the sockets upon first usage
+     */
+    zmq::context_t& get_context();
+    zmq::socket_t& get_incoming_socket();
+    zmq::socket_t& get_outbound_socket();
+
   private:
-    zmq::context_t m_context;
-    zmq::socket_t m_inbound_socket;
-    zmq::socket_t m_outbound_socket;
+    std::unique_ptr<zmq::context_t> m_context;
+    std::unique_ptr<zmq::socket_t> m_incoming_socket;
+    std::unique_ptr<zmq::socket_t> m_outbound_socket;
+
+    ZeroMQConfiguration m_config{};
 };
 
 } // namespace ncdlgen

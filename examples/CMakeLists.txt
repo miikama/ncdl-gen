@@ -13,11 +13,13 @@ add_custom_command(
                    COMMAND generator ${CMAKE_CURRENT_SOURCE_DIR}/example_data.cdl
                         --header
                         --interface_class_name example_data
+                        --interface_namespace_name generated
                         --use_library_include
                         > ${CMAKE_CURRENT_SOURCE_DIR}/example_data.h
                    COMMAND generator ${CMAKE_CURRENT_SOURCE_DIR}/example_data.cdl
                         --source
                         --interface_class_name example_data
+                        --interface_namespace_name generated
                         --use_library_include
                         > ${CMAKE_CURRENT_SOURCE_DIR}/example_data.cpp
                    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/example_data.cdl
@@ -41,5 +43,8 @@ add_custom_command(
 )
 
 
-add_executable(custom_parser custom_parser.cpp ${GENERATED_SOURCES} ${CMAKE_SOURCE_DIR}/example.nc)
-target_link_libraries(custom_parser PRIVATE ncdlgen::ncdlgen)
+add_executable(sender sender.cpp ${GENERATED_SOURCES} ${CMAKE_SOURCE_DIR}/example.nc)
+target_link_libraries(sender PRIVATE ncdlgen::ncdlgen)
+
+add_executable(receiver receiver.cpp ${GENERATED_SOURCES} ${CMAKE_SOURCE_DIR}/example.nc)
+target_link_libraries(receiver PRIVATE ncdlgen::ncdlgen)

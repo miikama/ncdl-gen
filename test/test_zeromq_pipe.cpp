@@ -180,11 +180,34 @@ TEST(pipe, zeromq_vector_incorrect_dimensions)
     EXPECT_ANY_THROW(helper());
 }
 
-TEST(pipe, zeromq_generated)
+TEST(pipe, zeromq_config)
 {
+    ZeroMQConfiguration config1{
+        .outbound_socket = "tcp://127.0.0.1:42042",
+        .incoming_socket = "tcp://127.0.0.1:42042",
+    };
+    ZeroMQConfiguration config2{
+        .outbound_socket = "tcp://127.0.0.1:42043",
+        .incoming_socket = "tcp://127.0.0.1:42043",
+    };
 
-    // ZeroMQPipe pipe{};
+    ZeroMQPipe pipe1(config1);
 
-    // ncdlgen::simple data{};
-    // ncdlgen::write(ZeroMQPipe, data);
+    ZeroMQPipe pipe2(config2);
+
+    int data1{4};
+    pipe1.write<int, int, VectorInterface>("/foo/bar", data1);
+
+    int data2{6};
+    pipe2.write<int, int, VectorInterface>("/foo/bar", data2);
+
+    // Read the field back out of order, pipe2 first, then pipe1
+    {
+        auto read_data = pipe2.read<int, int, VectorInterface>("/foo/bar");
+        EXPECT_EQ(read_data, data2);
+    }
+    {
+        auto read_data = pipe1.read<int, int, VectorInterface>("/foo/bar");
+        EXPECT_EQ(read_data, data1);
+    }
 }

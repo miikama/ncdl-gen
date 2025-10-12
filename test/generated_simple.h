@@ -25,20 +25,20 @@ struct simple
     foo foo_g{};
 };
 
-void read(NetCDFPipe& pipe, simple&);
+void read(ncdlgen::NetCDFPipe& pipe, simple&);
 
-void read(ZeroMQPipe& pipe, simple&);
+void read(ncdlgen::ZeroMQPipe& pipe, simple&);
 
-void read(NetCDFPipe& pipe, simple::foo&);
+void read(ncdlgen::NetCDFPipe& pipe, simple::foo&);
 
-void read(ZeroMQPipe& pipe, simple::foo&);
+void read(ncdlgen::ZeroMQPipe& pipe, simple::foo&);
 
-void write(NetCDFPipe& pipe, const simple&);
+void write(ncdlgen::NetCDFPipe& pipe, const simple&);
 
-void write(ZeroMQPipe& pipe, const simple&);
+void write(ncdlgen::ZeroMQPipe& pipe, const simple&);
 
-void write(NetCDFPipe& pipe, const simple::foo&);
+void write(ncdlgen::NetCDFPipe& pipe, const simple::foo&);
 
-void write(ZeroMQPipe& pipe, const simple::foo&);
+void write(ncdlgen::ZeroMQPipe& pipe, const simple::foo&);
 
 }; // namespace ncdlgen

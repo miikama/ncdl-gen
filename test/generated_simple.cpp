@@ -1,41 +1,47 @@
 #include "generated_simple.h"
 
-void ncdlgen::write(NetCDFPipe& pipe, const ncdlgen::simple& data) { ncdlgen::write(pipe, data.foo_g); }
-
-void ncdlgen::write(ZeroMQPipe& pipe, const ncdlgen::simple& data) { ncdlgen::write(pipe, data.foo_g); }
-
-void ncdlgen::write(NetCDFPipe& pipe, const ncdlgen::simple::foo& data)
+void ncdlgen::write(ncdlgen::NetCDFPipe& pipe, const ncdlgen::simple& data)
 {
-    pipe.write<int, int, VectorInterface>("/foo/bar", data.bar);
-    pipe.write<float, float, VectorInterface>("/foo/baz", data.baz);
-    pipe.write<std::vector<uint16_t>, uint16_t, VectorInterface>("/foo/bee", data.bee);
-    pipe.write<std::vector<std::vector<int>>, int, VectorInterface>("/foo/foobar", data.foobar);
+    ncdlgen::write(pipe, data.foo_g);
 }
 
-void ncdlgen::write(ZeroMQPipe& pipe, const ncdlgen::simple::foo& data)
+void ncdlgen::write(ncdlgen::ZeroMQPipe& pipe, const ncdlgen::simple& data)
 {
-    pipe.write<int, int, VectorInterface>("/foo/bar", data.bar);
-    pipe.write<float, float, VectorInterface>("/foo/baz", data.baz);
-    pipe.write<std::vector<uint16_t>, uint16_t, VectorInterface>("/foo/bee", data.bee);
-    pipe.write<std::vector<std::vector<int>>, int, VectorInterface>("/foo/foobar", data.foobar);
+    ncdlgen::write(pipe, data.foo_g);
 }
 
-void ncdlgen::read(NetCDFPipe& pipe, ncdlgen::simple& simple) { ncdlgen::read(pipe, simple.foo_g); }
-
-void ncdlgen::read(ZeroMQPipe& pipe, ncdlgen::simple& simple) { ncdlgen::read(pipe, simple.foo_g); }
-
-void ncdlgen::read(NetCDFPipe& pipe, ncdlgen::simple::foo& foo)
+void ncdlgen::write(ncdlgen::NetCDFPipe& pipe, const ncdlgen::simple::foo& data)
 {
-    foo.bar = pipe.read<int, int, VectorInterface>("/foo/bar");
-    foo.baz = pipe.read<float, float, VectorInterface>("/foo/baz");
-    foo.bee = pipe.read<std::vector<uint16_t>, uint16_t, VectorInterface>("/foo/bee");
-    foo.foobar = pipe.read<std::vector<std::vector<int>>, int, VectorInterface>("/foo/foobar");
+    pipe.write<int, int, ncdlgen::VectorInterface>("/foo/bar", data.bar);
+    pipe.write<float, float, ncdlgen::VectorInterface>("/foo/baz", data.baz);
+    pipe.write<std::vector<uint16_t>, uint16_t, ncdlgen::VectorInterface>("/foo/bee", data.bee);
+    pipe.write<std::vector<std::vector<int>>, int, ncdlgen::VectorInterface>("/foo/foobar", data.foobar);
 }
 
-void ncdlgen::read(ZeroMQPipe& pipe, ncdlgen::simple::foo& foo)
+void ncdlgen::write(ncdlgen::ZeroMQPipe& pipe, const ncdlgen::simple::foo& data)
 {
-    foo.bar = pipe.read<int, int, VectorInterface>("/foo/bar");
-    foo.baz = pipe.read<float, float, VectorInterface>("/foo/baz");
-    foo.bee = pipe.read<std::vector<uint16_t>, uint16_t, VectorInterface>("/foo/bee");
-    foo.foobar = pipe.read<std::vector<std::vector<int>>, int, VectorInterface>("/foo/foobar");
+    pipe.write<int, int, ncdlgen::VectorInterface>("/foo/bar", data.bar);
+    pipe.write<float, float, ncdlgen::VectorInterface>("/foo/baz", data.baz);
+    pipe.write<std::vector<uint16_t>, uint16_t, ncdlgen::VectorInterface>("/foo/bee", data.bee);
+    pipe.write<std::vector<std::vector<int>>, int, ncdlgen::VectorInterface>("/foo/foobar", data.foobar);
+}
+
+void ncdlgen::read(ncdlgen::NetCDFPipe& pipe, ncdlgen::simple& simple) { ncdlgen::read(pipe, simple.foo_g); }
+
+void ncdlgen::read(ncdlgen::ZeroMQPipe& pipe, ncdlgen::simple& simple) { ncdlgen::read(pipe, simple.foo_g); }
+
+void ncdlgen::read(ncdlgen::NetCDFPipe& pipe, ncdlgen::simple::foo& foo)
+{
+    foo.bar = pipe.read<int, int, ncdlgen::VectorInterface>("/foo/bar");
+    foo.baz = pipe.read<float, float, ncdlgen::VectorInterface>("/foo/baz");
+    foo.bee = pipe.read<std::vector<uint16_t>, uint16_t, ncdlgen::VectorInterface>("/foo/bee");
+    foo.foobar = pipe.read<std::vector<std::vector<int>>, int, ncdlgen::VectorInterface>("/foo/foobar");
+}
+
+void ncdlgen::read(ncdlgen::ZeroMQPipe& pipe, ncdlgen::simple::foo& foo)
+{
+    foo.bar = pipe.read<int, int, ncdlgen::VectorInterface>("/foo/bar");
+    foo.baz = pipe.read<float, float, ncdlgen::VectorInterface>("/foo/baz");
+    foo.bee = pipe.read<std::vector<uint16_t>, uint16_t, ncdlgen::VectorInterface>("/foo/bee");
+    foo.foobar = pipe.read<std::vector<std::vector<int>>, int, ncdlgen::VectorInterface>("/foo/foobar");
 }
